@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Salva-Locais - Versão Corrigida</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+        body, html { height: 100%; width: 100%; overflow: hidden; }
+        .app-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .app-header { background-color: #0081c9; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; height: 56px; z-index: 1000; }
+        .header-title { font-size: 20px; font-weight: 500; }
+        .header-icon { font-size: 20px; cursor: pointer; padding: 10px; min-width: 44px; text-align: center; }
+        #map { flex: 1; width: 100%; z-index: 1; }
+        .map-footer-buttons { position: absolute; bottom: 20px; left: 5%; width: 90%; display: flex; gap: 15px; z-index: 500; }
+        .btn-footer { flex: 1; background: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; color: #0081c9; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); cursor: pointer; }
+        .sidebar { position: absolute; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
+        .sidebar.open { left: 0; }
+        .sidebar-header { background: #0081c9; color: white; padding: 20px; text-align: center; }
+        .sidebar-menu { list-style: none; }
+        .sidebar-item { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; cursor: pointer; }
+        .sidebar-item-left { display: flex; align-items: center; gap: 15px; }
+        .sidebar-item i { color: #0081c9; width: 20px; }
+        .screen-overlay { position: absolute; top: 56px; left: 0; width: 100%; height: calc(100% - 56px); background: #f8f9fa; z-index: 1500; display: none; flex-direction: column; overflow-y: auto; }
+        .form-group { padding: 15px 20px; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 8px 0 12px; }
+        .photo-preview { width: 100%; height: 180px; background: #e9ecef; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; border: 2px dashed #adb5bd; }
+        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-placeholder { text-align: center; color: #6c757d; }
+        .photo-placeholder i { font-size: 48px; }
+        .coordinate-display { background: #e9ecef; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+        .btn-row-3 { display: flex; gap: 15px; padding: 20px; }
+        .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background: #6c757d; color: white; }
+        .btn-save { background: #0081c9; color: white; }
+        .btn-delete { background: #dc3545; color: white; }
+        .location-card { background: white; margin: 12px; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card-header-row { display: flex; gap: 12px; }
+        .card-info { flex: 1; }
+        .card-thumb { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: #e9ecef; }
+        .card-actions { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e9ecef; }
+        .card-action-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 6px; }
+        .btn-act-send { color: #25D366; }
+        .btn-act-edit { color: #0081c9; }
+        .btn-act-del { color: #dc3545; }
+        .modal-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 85%; max-width: 320px; border-radius: 12px; padding: 20px; }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .radio-option { padding: 12px 0; cursor: pointer; border-bottom: 1px solid #eee; }
+        .backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1900; display: none; }
+        .search-bar-container { padding: 12px 15px; position: relative; background: white; border-bottom: 1px solid #e9ecef; }
+        .search-input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 25px; }
+        .sort-button { position: absolute; right: 25px; top: 18px; background: none; border: none; font-size: 18px; color: #0081c9; cursor: pointer; }
+        .loading-indicator { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 8px; z-index: 4000; display: none; align-items: center; gap: 10px; }
+        .long-press-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 600; opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
+        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #0f0; font-size: 11px; padding: 4px 8px; z-index: 5000; font-family: monospace; text-align: center; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-indicator i { animation: spin 1s linear infinite; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
+        .list-return-map { margin: 15px; background: #e1f5fe; color: #0081c9; border: none; padding: 12px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <i class="fa-solid fa-bars header-icon" id="menuBtn"></i>
+            <span class="header-title" id="pageTitle">Salva-Locais</span>
+            <i class="fa-solid fa-layer-group header-icon" id="mapTypeBtn"></i>
+        </div>
+        <div id="map"></div>
+        <div class="map-footer-buttons">
+            <button class="btn-footer" onclick="showScreen('map')"><i class="fa-solid fa-map"></i> Mapa</button>
+            <button class="btn-footer" onclick="showSavedLocationsScreen()"><i class="fa-solid fa-list"></i> Meus Locais</button>
+        </div>
+        <div class="long-press-toast" id="longPressToast"><i class="fa-solid fa-hand-pointer"></i> Toque e segure no mapa</div>
+        <div class="backdrop" id="backdrop" onclick="closeSidebar()"></div>
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">Painel Operacional</div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item" onclick="getActualLocation()"><div class="sidebar-item-left"><i class="fa-solid fa-location-arrow"></i> <span>Minha Localização</span></div><i class="fa-solid fa-chevron-right"></i></li>
+                <li class="sidebar-item" onclick="showSavedLocationsScreen()"><div class="sidebar-item-left"><i class="fa-solid fa-list-ul"></i> <span>Locais Salvos</span></div><i class="fa-solid fa-chevron-right"></i></li>
+                <li class="sidebar-item" onclick="openNewGroupModal()"><div class="sidebar-item-left"><i class="fa-solid fa-plus-circle"></i> <span>Novo Grupo</span></div><i class="fa-solid fa-chevron-right"></i></li>
+                <li class="sidebar-item" onclick="carregarDaPlanilha()"><div class="sidebar-item-left"><i class="fa-solid fa-sync"></i> <span>Sincronizar</span></div><i class="fa-solid fa-chevron-right"></i></li>
+            </ul>
+        </div>
+        <div class="screen-overlay" id="screenSaveLocation">
+            <div class="form-group">
+                <div class="photo-preview" id="photoPreview" onclick="triggerPhotoUpload()">
+                    <div class="photo-placeholder" id="photoPlaceholder"><i class="fa-solid fa-camera"></i><p>Toque para foto</p></div>
+                    <img id="selectedPhoto" style="display: none;">
+                </div>
+                <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)">
+                <div class="coordinate-display"><i class="fa-solid fa-location-dot"></i> <strong>Coordenadas</strong><br><span id="txtLat"></span>° , <span id="txtLng"></span>°</div>
+                <input type="text" class="form-control" id="locName" placeholder="Nome do Local *">
+                <input type="text" class="form-control" id="locCpf" placeholder="CPF">
+                <input type="text" class="form-control" id="locAddress" placeholder="Endereço">
+                <input type="text" class="form-control" id="locContact" placeholder="Telefone">
+                <textarea class="form-control" id="locNote" rows="2" placeholder="Observações"></textarea>
+                <label>Grupo:</label>
+                <select class="form-control" id="locGroupSelect"></select>
+            </div>
+            <div class="btn-row-3">
+                <button class="btn btn-cancel" onclick="closeFormAndShowMap()">Cancelar</button>
+                <button class="btn btn-save" id="saveLocationBtn" onclick="saveLocationData()">Salvar</button>
+                <button class="btn btn-delete" id="deleteLocationBtn" onclick="deleteCurrentLocation()" style="display: none;">Excluir</button>
+            </div>
+        </div>
+        <div class="screen-overlay" id="screenSavedList">
+            <div class="search-bar-container"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="searchBar" placeholder="Pesquisar..." oninput="renderSavedList()"><button class="sort-button" onclick="openSortModal()"><i class="fa-solid fa-sort"></i></button></div>
+            <div id="savedListContainer" style="flex:1; overflow-y: auto;"></div>
+            <button class="list-return-map" onclick="closeFormAndShowMap()"><i class="fa-solid fa-arrow-left"></i> Voltar ao Mapa</button>
+        </div>
+    </div>
+    <div class="loading-indicator" id="loadingIndicator"><i class="fa-solid fa-circle-notch"></i><span>Processando...</span></div>
+    <div class="status-bar" id="statusBar">🟡 Inicializando...</div>
+    
+    <div class="modal-popup" id="modalSort"><div class="modal-content"><div class="modal-title">Classificar</div><div class="radio-option" onclick="setSortOrder('date-desc')">📅 Mais recentes</div><div class="radio-option" onclick="setSortOrder('date-asc')">📅 Mais antigas</div><div class="radio-option" onclick="setSortOrder('alpha')">🔤 Alfabética</div></div></div>
+    <div class="modal-popup" id="modalNewGroup"><div class="modal-content"><div class="modal-title">Novo Grupo</div><input type="text" class="form-control" id="newGroupName" placeholder="Nome"><input type="color" id="newGroupColor" value="#0081c9"><div class="btn-row-3"><button class="btn btn-cancel" onclick="closeModal('modalNewGroup')">Cancelar</button><button class="btn btn-save" onclick="createNewGroup()">Criar</button></div></div></div>
+    <div class="modal-popup" id="modalMapType"><div class="modal-content"><div class="modal-title">Mapa</div><div class="radio-option" onclick="changeMapLayer('street')">🗺️ Padrão</div><div class="radio-option" onclick="changeMapLayer('satellite')">🛰️ Satélite</div></div></div>
+    <div class="modal-popup" id="modalSendWhatsApp"><div class="modal-content"><div class="modal-title"><i class="fa-brands fa-whatsapp"></i> WhatsApp</div><div class="radio-option" onclick="processarEnvioWhatsApp('web')">💻 Web</div><div class="radio-option" onclick="processarEnvioWhatsApp('api')">📱 Mobile</div><button class="btn btn-cancel" onclick="closeModal('modalSendWhatsApp')" style="margin-top:15px;">Fechar</button></div></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // URL DO WEB APP - JÁ CONFIGURADA COM SUA URL
+        const CONFIG_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8xFkTi44Z3hMD4Xhe38RlvX6tq8bMhd5nS6zW_xKHuRKDefO6umLuhSeQh9yuzCpk/exec";
+        
+        function atualizarStatus(msg, isError = false) {
+            const bar = document.getElementById('statusBar');
+            bar.innerHTML = isError ? `🔴 ${msg}` : `🟢 ${msg}`;
+            bar.style.color = isError ? '#ff6666' : '#66ff66';
+            console.log(`[STATUS] ${msg}`);
+        }
+        
+        let locations = [], groups = [{ id:"DROGAS", name:"DROGAS", color:"#e74c3c" }, { id:"ROUBO", name:"ROUBO", color:"#f39c12" }, { id:"HOMICIDIO", name:"HOMICÍDIO", color:"#8e44ad" }];
+        let currentSortOrder = 'date-desc', editingLocationId = null, currentSelectedCoords = null, currentPhotoData = null, markers = {}, currentMapLayer = 'street', locationIdParaEnvio = null;
+        const initialCoords = [-11.722502, -62.327864];
+        let map = L.map('map', { zoomControl: false }).setView(initialCoords, 16);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+        const hybridGroup = L.layerGroup([L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'), L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}')]);
+        streetLayer.addTo(map);
+        
+        function showLoading(msg) { let l = document.getElementById('loadingIndicator'); l.querySelector('span').innerText = msg; l.style.display = 'flex'; atualizarStatus(msg); }
+        function hideLoading() { document.getElementById('loadingIndicator').style.display = 'none'; }
+        
+        function carregarDaPlanilha() {
+            closeSidebar();
+            atualizarStatus("Carregando da planilha...");
+            showLoading("Carregando...");
+            
+            fetch(CONFIG_SCRIPT_URL)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(data => { 
+                    if(Array.isArray(data) && data.length > 0) { 
+                        locations = data; 
+                        locations.forEach(l => l.id = l.id.toString()); 
+                        saveToLocalStorage(); 
+                        refreshAllMarkers(); 
+                        atualizarStatus(`✅ Carregado ${locations.length} registros da planilha`);
+                        alert(`✅ Carregado ${locations.length} registros da planilha!`);
+                    } else if(Array.isArray(data) && data.length === 0) {
+                        atualizarStatus("✅ Conectado! Planilha vazia.");
+                        alert("✅ Conexão OK! Planilha está vazia.");
+                    } else {
+                        throw new Error("Resposta inválida");
+                    }
+                    hideLoading(); 
+                })
+                .catch(e => { 
+                    console.error("Erro:", e); 
+                    atualizarStatus(`❌ Erro: ${e.message}`, true);
+                    alert(`❌ Falha ao carregar da planilha!\n\nErro: ${e.message}\n\nVerifique se o Web App está publicado como "Qualquer pessoa".`);
+                    hideLoading(); 
+                });
+        }
+        
+        function loadLocalFallback() { 
+            let saved = localStorage.getItem('salva_locais_data'); 
+            if(saved) { 
+                let data = JSON.parse(saved); 
+                locations = data.locations || []; 
+                if(data.groups) groups = data.groups; 
+                atualizarStatus(`📱 Local: ${locations.length} registros`);
+            } else {
+                atualizarStatus("📱 Modo local - sem dados");
+            }
+            updateGroupSelect(); 
+            refreshAllMarkers(); 
+        }
+        
+        function saveToLocalStorage() { localStorage.setItem('salva_locais_data', JSON.stringify({ locations, groups })); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('backdrop').style.display = 'none'; }
+        function toggleSidebar() { let s = document.getElementById('sidebar'), b = document.getElementById('backdrop'); if(s.classList.contains('open')) closeSidebar(); else { s.classList.add('open'); b.style.display = 'block'; } }
+        function showScreen(screen) { closeSidebar(); document.getElementById('screenSaveLocation').style.display = 'none'; document.getElementById('screenSavedList').style.display = 'none'; if(screen === 'save') { document.getElementById('screenSaveLocation').style.display = 'flex'; document.getElementById('pageTitle').innerText = editingLocationId ? "Editar" : "Salvar"; } else if(screen === 'list') { document.getElementById('screenSavedList').style.display = 'flex'; document.getElementById('pageTitle').innerText = "Locais"; renderSavedList(); } else { document.getElementById('pageTitle').innerText = "Salva-Locais"; setTimeout(() => map.invalidateSize(), 200); } }
+        function showSavedLocationsScreen() { showScreen('list'); }
+        function closeFormAndShowMap() { showScreen('map'); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function changeMapLayer(type) { if(currentMapLayer === 'street') map.removeLayer(streetLayer); else map.removeLayer(hybridGroup); type === 'street' ? streetLayer.addTo(map) : hybridGroup.addTo(map); currentMapLayer = type; closeModal('modalMapType'); }
+        function getGroupColor(gid) { let g = groups.find(g => g.id === gid); return g ? g.color : "#0081c9"; }
+        function createCustomIcon(color) { return L.divIcon({ html: `<div style="background-color:${color}; width:34px; height:34px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-location-dot" style="transform:rotate(45deg); color:white; font-size:14px;"></i></div>`, iconSize: [34,34], iconAnchor: [17,34], popupAnchor: [0,-30] }); }
+        function refreshAllMarkers() { Object.values(markers).forEach(m => map.removeLayer(m)); markers = {}; locations.forEach(loc => { let m = L.marker([loc.lat, loc.lng], { icon: createCustomIcon(getGroupColor(loc.groupId)) }).addTo(map); m.bindPopup(`<div><strong>📍 ${loc.name}</strong><br>${loc.address ? loc.address.substring(0,45) : ''}<br><button onclick="window.editLocationById('${loc.id}')" style="background:#0081c9; color:white; border:none; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer;">Editar</button></div>`); markers[loc.id] = m; }); }
+        window.editLocationById = (id) => editLocation(id);
+        
+        let longPressTimer = null;
+        document.getElementById('map').addEventListener('touchstart', (e) => { let touch = e.touches[0]; longPressTimer = setTimeout(() => { let point = map.containerPointToLatLng([touch.clientX, touch.clientY]); openFormAtCoords(point.lat, point.lng); }, 600); });
+        document.getElementById('map').addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        
+        function openFormAtCoords(lat, lng) { editingLocationId = null; currentSelectedCoords = { lat, lng }; currentPhotoData = null; updateGroupSelect(); document.getElementById('txtLat').innerText = lat.toFixed(6); document.getElementById('txtLng').innerText = lng.toFixed(6); document.getElementById('locName').value = ''; document.getElementById('locCpf').value = ''; document.getElementById('locAddress').value = ''; document.getElementById('locContact').value = ''; document.getElementById('locNote').value = ''; document.getElementById('selectedPhoto').style.display = 'none'; document.getElementById('photoPlaceholder').style.display = 'flex'; document.getElementById('deleteLocationBtn').style.display = 'none'; showScreen('save'); }
+        
+        function triggerPhotoUpload() { document.getElementById('photoInput').click(); }
+        function compressImage(file, maxSizeKB=100) { return new Promise((resolve) => { let reader = new FileReader(); reader.onload = (e) => { let img = new Image(); img.onload = () => { let w=img.width, h=img.height, max=300; if(w>h && w>max) { h = (h*max)/w; w=max; } else if(h>max) { w = (w*max)/h; h=max; } let canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); let result = canvas.toDataURL('image/jpeg', 0.5); resolve(result); }; img.src = e.target.result; }; reader.readAsDataURL(file); }); }
+        async function handlePhotoSelect(event) { let file = event.target.files[0]; if(file) { showLoading("Comprimindo..."); try { currentPhotoData = await compressImage(file, 100); document.getElementById('selectedPhoto').src = currentPhotoData; document.getElementById('selectedPhoto').style.display = 'block'; document.getElementById('photoPlaceholder').style.display = 'none'; atualizarStatus("Foto carregada"); } catch(e) { alert("Erro na imagem"); } finally { hideLoading(); } } }
+        
+        function getActualLocation() { closeSidebar(); navigator.geolocation.getCurrentPosition(p => map.setView([p.coords.latitude, p.coords.longitude], 18), () => alert("Erro GPS")); }
+        function updateGroupSelect() { let select = document.getElementById('locGroupSelect'); if(select) { select.innerHTML = ''; groups.forEach(g => { let opt = document.createElement('option'); opt.value = g.id; opt.innerText = g.name; select.appendChild(opt); }); } }
+        function openNewGroupModal() { closeSidebar(); openModal('modalNewGroup'); }
+        function createNewGroup() { let name = document.getElementById('newGroupName').value.trim(); let color = document.getElementById('newGroupColor').value; if(!name) return; let id = name.toUpperCase().replace(/\s+/g, '_'); if(groups.some(g=>g.id===id)) { alert("Grupo existe"); return; } groups.push({id,name,color}); updateGroupSelect(); saveToLocalStorage(); closeModal('modalNewGroup'); }
+        
+        async function saveLocationData() {
+            let name = document.getElementById('locName').value.trim();
+            if(!name) { alert("Nome obrigatório"); return; }
+            let btn = document.getElementById('saveLocationBtn');
+            btn.disabled = true; btn.innerText = "Gravando...";
+            showLoading("Salvando...");
+            
+            let id = editingLocationId || Date.now().toString();
+            let lat = currentSelectedCoords ? currentSelectedCoords.lat : initialCoords[0];
+            let lng = currentSelectedCoords ? currentSelectedCoords.lng : initialCoords[1];
+            let data = { 
+                id, name, 
+                cpf: document.getElementById('locCpf').value.trim(), 
+                address: document.getElementById('locAddress').value.trim(), 
+                lat, lng, 
+                contact: document.getElementById('locContact').value.trim(), 
+                note: document.getElementById('locNote').value.trim(), 
+                groupId: document.getElementById('locGroupSelect').value, 
+                photoData: currentPhotoData || "", 
+                date: new Date().toISOString() 
+            };
+            
+            // Salva localmente primeiro
+            if(editingLocationId) { 
+                let idx = locations.findIndex(l=>l.id===editingLocationId); 
+                if(idx!==-1) locations[idx]=data; 
+            } else { 
+                locations.push(data); 
+            }
+            saveToLocalStorage(); 
+            refreshAllMarkers();
+            atualizarStatus("Salvo localmente");
+            
+            // Tenta sincronizar com Google
+            try {
+                atualizarStatus("Sincronizando com Google...");
+                
+                // Usa fetch com modo cors explícito
+                let response = await fetch(CONFIG_SCRIPT_URL, { 
+                    method: 'POST', 
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ action: "save", data: data })
+                });
+                
+                if(!response.ok) throw new Error(`HTTP ${response.status}`);
+                let json = await response.json();
+                
+                if(json.status === "success") {
+                    atualizarStatus("✅ Sincronizado com Google!");
+                    alert("✅ Salvo e sincronizado com Google Sheets!");
+                } else {
+                    throw new Error(json.message || "Erro desconhecido");
+                }
+            } catch(err) {
+                console.error("Erro sync:", err);
+                atualizarStatus(`⚠️ Erro: ${err.message} - salvo localmente`, true);
+                alert(`⚠️ Erro ao sincronizar: ${err.message}\n\nDados salvos localmente.\n\nClique em "Sincronizar" no menu depois para enviar.`);
+            } finally {
+                hideLoading();
+                btn.disabled = false; 
+                btn.innerText = "Salvar"; 
+                closeFormAndShowMap();
+            }
+        }
+        
+        function editLocation(id) { 
+            let loc = locations.find(l=>l.id===id.toString()); 
+            if(!loc) return; 
+            editingLocationId = loc.id; 
+            currentSelectedCoords = { lat: parseFloat(loc.lat), lng: parseFloat(loc.lng) }; 
+            currentPhotoData = loc.photoData || null; 
+            updateGroupSelect(); 
+            document.getElementById('locGroupSelect').value = loc.groupId; 
+            document.getElementById('txtLat').innerText = currentSelectedCoords.lat.toFixed(6); 
+            document.getElementById('txtLng').innerText = currentSelectedCoords.lng.toFixed(6); 
+            document.getElementById('locName').value = loc.name; 
+            document.getElementById('locCpf').value = loc.cpf || ''; 
+            document.getElementById('locAddress').value = loc.address || ''; 
+            document.getElementById('locContact').value = loc.contact || ''; 
+            document.getElementById('locNote').value = loc.note || ''; 
+            if(currentPhotoData && currentPhotoData.startsWith('data:image')) { 
+                document.getElementById('selectedPhoto').src = currentPhotoData; 
+                document.getElementById('selectedPhoto').style.display = 'block'; 
+                document.getElementById('photoPlaceholder').style.display = 'none'; 
+            } else { 
+                document.getElementById('selectedPhoto').style.display = 'none'; 
+                document.getElementById('photoPlaceholder').style.display = 'flex'; 
+            } 
+            document.getElementById('deleteLocationBtn').style.display = 'block'; 
+            showScreen('save'); 
+        }
+        
+        async function deleteCurrentLocation() { 
+            if(!editingLocationId) return; 
+            if(!confirm("Excluir?")) return; 
+            let id = editingLocationId; 
+            locations = locations.filter(l=>l.id!==id); 
+            saveToLocalStorage(); 
+            refreshAllMarkers(); 
+            closeFormAndShowMap(); 
+            try { 
+                await fetch(CONFIG_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: "delete", data: { id } }) }); 
+            } catch(e) { console.error("Erro delete:", e); } 
+        }
+        
+        function renderSavedList() { 
+            let container = document.getElementById('savedListContainer'); 
+            let search = document.getElementById('searchBar').value.toLowerCase(); 
+            container.innerHTML = ''; 
+            let filtered = locations.filter(l => l.name.toLowerCase().includes(search) || (l.address||'').toLowerCase().includes(search) || l.groupId.toLowerCase().includes(search)); 
+            if(currentSortOrder === 'alpha') filtered.sort((a,b)=>a.name.localeCompare(b.name)); 
+            else if(currentSortOrder === 'date-asc') filtered.sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)); 
+            else filtered.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)); 
+            if(filtered.length===0) { container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Nenhum local salvo</p><p style="font-size:12px; margin-top:10px;">Toque e segure no mapa para adicionar</p></div>'; return; } 
+            filtered.forEach(loc => { 
+                let div = document.createElement('div'); 
+                div.className = 'location-card'; 
+                let img = (loc.photoData && loc.photoData.startsWith('data:image')) ? `<img src="${loc.photoData}" class="card-thumb">` : `<div class="card-thumb" style="display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-image" style="font-size:24px; color:#adb5bd;"></i></div>`; 
+                div.innerHTML = `<div class="card-header-row">${img}<div class="card-info"><h4>${loc.name}</h4><p><i class="fa-solid fa-tag"></i> ${loc.groupId}</p><p><i class="fa-solid fa-map-pin"></i> ${parseFloat(loc.lat).toFixed(5)}, ${parseFloat(loc.lng).toFixed(5)}</p>${loc.address ? `<p style="font-size:12px; color:#666;">${loc.address.substring(0,60)}</p>` : ''}</div></div><div class="card-actions"><button class="card-action-btn btn-act-send" onclick="abrirModalWhatsApp('${loc.id}')"><i class="fa-brands fa-whatsapp"></i> Compartilhar</button><button class="card-action-btn btn-act-edit" onclick="editLocation('${loc.id}')"><i class="fa-solid fa-pen"></i> Editar</button><button class="card-action-btn btn-act-del" onclick="deletarDiretoDaLista('${loc.id}')"><i class="fa-solid fa-trash"></i> Excluir</button></div>`; 
+                container.appendChild(div); 
+            }); 
+        }
+        
+        function openSortModal() { openModal('modalSort'); }
+        function setSortOrder(order) { currentSortOrder = order; closeModal('modalSort'); renderSavedList(); }
+        function deletarDiretoDaLista(id) { editingLocationId = id; deleteCurrentLocation(); renderSavedList(); }
+        function abrirModalWhatsApp(id) { locationIdParaEnvio = id; openModal('modalSendWhatsApp'); }
+        function processarEnvioWhatsApp(tipo) { let loc = locations.find(l=>l.id===locationIdParaEnvio.toString()); if(!loc) return; closeModal('modalSendWhatsApp'); let texto = `*📍 LOCALIZAÇÃO OPERACIONAL*\n\n*Nome:* ${loc.name}\n*Grupo:* ${loc.groupId}\n*Endereço:* ${loc.address || 'N/I'}\n*Coordenadas:* ${loc.lat}, ${loc.lng}\n*Link:* https://maps.google.com/?q=${loc.lat},${loc.lng}`; let url = tipo==='web' ? `https://web.whatsapp.com/send?text=${encodeURIComponent(texto)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`; window.open(url, '_blank'); }
+        
+        document.getElementById('menuBtn').addEventListener('click', toggleSidebar);
+        document.getElementById('mapTypeBtn').addEventListener('click', () => openModal('modalMapType'));
+        setTimeout(() => { let t = document.getElementById('longPressToast'); if(t) { t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 4000); } }, 1000);
+        
+        loadLocalFallback();
+        
+        // Testa conexão ao iniciar
+        setTimeout(() => {
+            fetch(CONFIG_SCRIPT_URL).then(r => r.json()).then(data => {
+                if(Array.isArray(data) && data.length > 0) {
+                    locations = data;
+                    locations.forEach(l => l.id = l.id.toString());
+                    saveToLocalStorage();
+                    refreshAllMarkers();
+                    atualizarStatus(`✅ Conectado! ${data.length} registros carregados`);
+                } else if(Array.isArray(data)) {
+                    atualizarStatus("✅ Conectado! Planilha vazia");
+                }
+            }).catch(e => {
+                atualizarStatus("⚠️ Modo offline - salvando localmente", true);
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
