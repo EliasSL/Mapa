@@ -356,6 +356,7 @@
             font-size: 24px;
             color: #999;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
         .cadastro-imagem img {
@@ -615,17 +616,14 @@
         let selectedCadastro = null;
         let isChangingAddressMode = false;
         let currentEditingId = null;
-        let touchStartTime = 0;
         let touchStartCoords = null;
         let touchMoveTriggered = false;
-        let isLongPressActive = false;
-        let markers = {}; // Objeto para armazenar referências dos marcadores
+        let markers = {};
         
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             init();
             
-            // Botão Locais Salvos
             document.getElementById('btnLocaisSalvos').addEventListener('click', openCadastrosPanel);
             document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -634,7 +632,6 @@
         });
         
         function init() {
-            // Inicializar mapa
             map = L.map('map', {
                 tap: true,
                 touchZoom: true,
@@ -642,14 +639,13 @@
                 tapTolerance: 10
             }).setView([-11.720739, -62.315405], 18);
             
-            // Camada Satélite Híbrido
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 attribution: '&copy; Google',
                 maxZoom: 20,
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
             }).addTo(map);
             
-            // EVENTOS PARA TOQUE LONGO NO CELULAR
+            // Eventos para toque longo
             const mapContainer = map.getContainer();
             
             mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -661,9 +657,7 @@
             mapContainer.addEventListener('mouseup', onMouseUp);
             mapContainer.addEventListener('mouseleave', onMouseCancel);
             
-            // Carregar marcadores
             loadCadastros();
-            
             showToast('Toque e segure por 2 segundos no mapa para marcar um local');
         }
         
@@ -673,17 +667,13 @@
             const touch = e.touches[0];
             const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
             touchStartCoords = { x: touch.clientX, y: touch.clientY };
-            touchStartTime = Date.now();
             touchMoveTriggered = false;
-            isLongPressActive = false;
             
-            const indicator = document.getElementById('longPressIndicator');
-            indicator.style.display = 'block';
+            document.getElementById('longPressIndicator').style.display = 'block';
             
             longPressTimeout = setTimeout(() => {
                 if (!touchMoveTriggered && touchStartCoords) {
-                    isLongPressActive = true;
-                    indicator.style.display = 'none';
+                    document.getElementById('longPressIndicator').style.display = 'none';
                     handleLongPress(point);
                 }
             }, 2000);
@@ -725,13 +715,10 @@
             touchStartCoords = null;
         }
         
-        let mouseDownTime = 0;
         let mouseDownCoords = null;
         
         function onMouseDown(e) {
-            mouseDownTime = Date.now();
             mouseDownCoords = { x: e.clientX, y: e.clientY };
-            
             const point = map.containerPointToLatLng([e.clientX, e.clientY]);
             
             longPressTimeout = setTimeout(() => {
@@ -764,6 +751,7 @@
             
             currentLatLng = latlng;
             
+            // Marcador temporário
             const tempMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
                     html: '<div style="background-color: #1a7431; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
@@ -774,12 +762,14 @@
             
             setTimeout(() => map.removeLayer(tempMarker), 2000);
             
+            // Obter endereço
             currentAddress = await getAddress(latlng.lat, latlng.lng);
             currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
             
             document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
             document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
             
+            // Limpar formulário
             document.getElementById('nome').value = '';
             document.getElementById('cpf').value = '';
             document.getElementById('contato').value = '';
@@ -838,6 +828,17 @@
             return null;
         }
         
+        // Converter imagem para Base64
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Preview da imagem
         document.getElementById('imagem').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -851,6 +852,7 @@
             }
         });
         
+        // Submissão do formulário - CORRIGIDO
         document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -867,14 +869,26 @@
                 return;
             }
             
+            if (!currentLatLng) {
+                showToast('Erro: Localização não definida');
+                return;
+            }
+            
             const enderecoBase = document.getElementById('endereco').value;
             const enderecoCompleto = `${enderecoBase}, ${numero}`;
             
-            // Obter imagem base64 se existir
+            // Processar imagem
             let imagemBase64 = '';
             const imagemInput = document.getElementById('imagem');
-            if (imagemInput.files && imagemInput.files[0]) {
-                imagemBase64 = await convertImageToBase64(imagemInput.files[0]);
+            if (imagemInput.files && imagemInput.files.length > 0) {
+                try {
+                    imagemBase64 = await convertImageToBase64(imagemInput.files[0]);
+                    showToast('Processando imagem...');
+                } catch (error) {
+                    console.error('Erro ao converter imagem:', error);
+                }
+            } else if (document.getElementById('preview').src && document.getElementById('preview').src.startsWith('data:')) {
+                imagemBase64 = document.getElementById('preview').src;
             }
             
             const formData = {
@@ -889,26 +903,35 @@
                 nota: document.getElementById('nota').value,
                 grupo: document.getElementById('grupo').value,
                 numero: numero,
-                imagem: imagemBase64 || document.getElementById('preview').src || '',
+                imagem: imagemBase64,
                 data: new Date().toISOString()
             };
             
             showToast('💾 Salvando...');
             
             try {
-                await fetch(SCRIPT_URL, {
+                // Enviar para o Google Sheets
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify(formData)
                 });
                 
                 showToast('✅ Salvo com sucesso!');
                 closeForm();
-                loadCadastros();
+                
+                // Recarregar cadastros e adicionar marcador
+                await loadCadastros();
+                
+                // Adicionar marcador imediatamente
+                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo, formData.id, imagemBase64);
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
+                // Fallback: salvar localmente
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 if (currentEditingId) {
                     const index = localData.findIndex(c => c.id == currentEditingId);
@@ -919,18 +942,10 @@
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
                 showToast('⚠️ Salvo localmente!');
                 closeForm();
-                loadCadastros();
+                await loadCadastros();
+                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo, formData.id, imagemBase64);
             }
         });
-        
-        function convertImageToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
         
         function closeForm() {
             document.getElementById('formOverlay').style.display = 'none';
@@ -938,29 +953,21 @@
             currentEditingId = null;
         }
         
-        function createCustomMarker(grupo, nome, id) {
-            // Cores conforme solicitado: Vermelho para DROGAS, Laranja para HOMICÍDIO, Amarelo para ROUBO
-            let markerColor, iconColor;
+        function getMarkerColor(grupo) {
             switch(grupo) {
-                case 'DROGAS':
-                    markerColor = '#ff0000'; // Vermelho
-                    iconColor = 'white';
-                    break;
-                case 'HOMICÍDIO':
-                    markerColor = '#ff6600'; // Laranja
-                    iconColor = 'white';
-                    break;
-                case 'ROUBO':
-                    markerColor = '#ffcc00'; // Amarelo
-                    iconColor = '#333';
-                    break;
-                default:
-                    markerColor = '#607d8b';
-                    iconColor = 'white';
+                case 'DROGAS': return '#ff0000';
+                case 'HOMICÍDIO': return '#ff6600';
+                case 'ROUBO': return '#ffcc00';
+                default: return '#607d8b';
             }
+        }
+        
+        function createCustomMarker(grupo) {
+            let markerColor = getMarkerColor(grupo);
+            let iconColor = grupo === 'ROUBO' ? '#333' : 'white';
             
             return L.divIcon({
-                html: `<div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">
+                html: `<div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
                            <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
                        </div>`,
                 iconSize: [32, 32],
@@ -970,19 +977,20 @@
         }
         
         function addMarkerToMap(lat, lng, nome, grupo, id, imagem) {
-            // Remover marcador existente se houver
+            if (!lat || !lng) return;
+            
+            // Remover marcador antigo se existir
             if (markers[id]) {
                 map.removeLayer(markers[id]);
             }
             
-            const markerIcon = createCustomMarker(grupo, nome, id);
-            const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
+            const markerIcon = createCustomMarker(grupo);
+            const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
             
-            // Criar HTML do popup com imagem se existir
             let imagemHtml = '';
             if (imagem && imagem.startsWith('data:image')) {
                 imagemHtml = `<div style="text-align: center; margin-bottom: 8px;">
-                                <img src="${imagem}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid ${grupo === 'DROGAS' ? '#ff0000' : (grupo === 'HOMICÍDIO' ? '#ff6600' : '#ffcc00')}">
+                                <img src="${imagem}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid ${getMarkerColor(grupo)}">
                               </div>`;
             }
             
@@ -990,7 +998,7 @@
                 <div style="min-width: 180px;">
                     ${imagemHtml}
                     <b style="font-size: 15px;">${escapeHtml(nome)}</b><br>
-                    <span style="color: ${grupo === 'DROGAS' ? '#ff0000' : (grupo === 'HOMICÍDIO' ? '#ff6600' : '#ffcc00')}; font-weight: bold;">● ${grupo}</span><br>
+                    <span style="color: ${getMarkerColor(grupo)}; font-weight: bold;">● ${grupo}</span><br>
                     <button onclick="verCadastroDetalhe('${id}')" style="margin-top: 8px; padding: 5px 12px; background: #1a7431; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
                         Ver detalhes
                     </button>
@@ -1007,44 +1015,34 @@
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=get`);
                 const data = await response.json();
-                if (data && data.cadastros) {
+                
+                if (data && data.cadastros && data.cadastros.length > 0) {
                     allCadastros = data.cadastros;
-                    renderCadastrosList();
-                    
-                    // Limpar todos os marcadores
-                    Object.keys(markers).forEach(key => {
-                        if (markers[key]) {
-                            map.removeLayer(markers[key]);
-                        }
-                    });
-                    markers = {};
-                    
-                    // Recriar marcadores
-                    allCadastros.forEach(cad => {
-                        if (cad.lat && cad.lng) {
-                            addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
-                        }
-                    });
                 } else {
                     throw new Error('Sem dados');
                 }
             } catch (error) {
-                console.error('Erro ao carregar:', error);
+                console.error('Erro ao carregar da planilha, usando localStorage:', error);
                 const localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 allCadastros = localData;
-                renderCadastrosList();
-                
-                Object.keys(markers).forEach(key => {
-                    if (markers[key]) map.removeLayer(markers[key]);
-                });
-                markers = {};
-                
-                allCadastros.forEach(cad => {
-                    if (cad.lat && cad.lng) {
-                        addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
-                    }
-                });
             }
+            
+            renderCadastrosList();
+            
+            // Limpar todos os marcadores
+            Object.keys(markers).forEach(key => {
+                if (markers[key]) {
+                    map.removeLayer(markers[key]);
+                }
+            });
+            markers = {};
+            
+            // Recriar marcadores
+            allCadastros.forEach(cad => {
+                if (cad.lat && cad.lng) {
+                    addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
+                }
+            });
         }
         
         function renderCadastrosList() {
@@ -1140,7 +1138,7 @@
                 if (selectedCadastro.lat && selectedCadastro.lng) {
                     map.setView([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], 18);
                     
-                    // Efeito de destaque no marcador
+                    // Destacar marcador
                     if (markers[id]) {
                         const markerElement = markers[id].getElement();
                         if (markerElement) {
@@ -1195,6 +1193,14 @@
             document.getElementById('grupo').value = selectedCadastro.grupo;
             document.getElementById('nota').value = selectedCadastro.nota || '';
             
+            if (selectedCadastro.imagem && selectedCadastro.imagem.startsWith('data:image')) {
+                document.getElementById('preview').src = selectedCadastro.imagem;
+                document.getElementById('preview').style.display = 'block';
+            } else {
+                document.getElementById('preview').style.display = 'none';
+                document.getElementById('preview').src = '';
+            }
+            
             closeCadastrosPanel();
             document.getElementById('formOverlay').style.display = 'flex';
         }
@@ -1212,13 +1218,12 @@
                 });
                 showToast('🗑️ Excluído com sucesso!');
                 
-                // Remover marcador do mapa
                 if (markers[selectedCadastro.id]) {
                     map.removeLayer(markers[selectedCadastro.id]);
                     delete markers[selectedCadastro.id];
                 }
                 
-                loadCadastros();
+                await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
             } catch (error) {
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
@@ -1231,7 +1236,7 @@
                 }
                 
                 showToast('⚠️ Excluído localmente!');
-                loadCadastros();
+                await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
             }
         }
@@ -1265,14 +1270,14 @@
                         body: JSON.stringify({ action: 'update', ...updatedCadastro })
                     });
                     showToast('✅ Endereço atualizado!');
-                    loadCadastros();
+                    await loadCadastros();
                 } catch (error) {
                     let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                     const index = localData.findIndex(c => c.id == selectedCadastro.id);
                     if (index !== -1) localData[index] = updatedCadastro;
                     localStorage.setItem('cadastros_local', JSON.stringify(localData));
                     showToast('⚠️ Endereço atualizado localmente!');
-                    loadCadastros();
+                    await loadCadastros();
                 }
                 isChangingAddressMode = false;
             });
@@ -1310,7 +1315,6 @@
         window.closeForm = closeForm;
         window.openCadastrosPanel = openCadastrosPanel;
         
-        // Animação de pulso
         const style = document.createElement('style');
         style.textContent = `
             @keyframes pulse {
