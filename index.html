@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Salva-Locais - Marcador de Localizações</title>
+    <title>Mapa do Crime - NBO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -29,51 +29,80 @@
             z-index: 1;
         }
 
-        /* Header superior com opções */
+        /* Header superior com logo */
         .app-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #4CAF50, #45a049);
+            background: linear-gradient(135deg, #1a7431, #0d4d1f);
             color: white;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header-top {
             padding: 12px 16px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
 
-        .app-header h1 {
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #1a7431;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .logo-text {
             font-size: 18px;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-weight: bold;
+            letter-spacing: 1px;
         }
 
-        .header-buttons {
-            display: flex;
-            gap: 15px;
+        .logo-text small {
+            font-size: 10px;
+            opacity: 0.9;
+            display: block;
         }
 
-        .header-btn {
+        .header-bottom {
+            padding: 8px 16px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .btn-locais-salvos {
             background: rgba(255,255,255,0.2);
             border: none;
             color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
+            padding: 8px 16px;
+            border-radius: 25px;
             cursor: pointer;
             font-size: 14px;
-            display: flex;
+            font-weight: 600;
+            display: inline-flex;
             align-items: center;
-            gap: 5px;
-            transition: background 0.3s;
+            gap: 8px;
+            transition: all 0.3s;
         }
 
-        .header-btn:active {
-            background: rgba(255,255,255,0.4);
+        .btn-locais-salvos:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.98);
         }
 
         /* Overlay e Formulário */
@@ -115,7 +144,7 @@
         .form-container h2 {
             margin-bottom: 20px;
             color: #333;
-            border-bottom: 2px solid #4CAF50;
+            border-bottom: 2px solid #1a7431;
             padding-bottom: 10px;
         }
 
@@ -162,7 +191,7 @@
             border-radius: 6px;
             margin-bottom: 10px;
             font-size: 14px;
-            border-left: 3px solid #4CAF50;
+            border-left: 3px solid #1a7431;
         }
 
         .numero-row {
@@ -177,7 +206,7 @@
 
         .numero-row button {
             padding: 12px 15px;
-            background: #4CAF50;
+            background: #1a7431;
             color: white;
             border: none;
             border-radius: 6px;
@@ -203,23 +232,23 @@
         }
 
         .btn-primary {
-            background-color: #4CAF50;
+            background-color: #1a7431;
             color: white;
         }
 
         .btn-secondary {
-            background-color: #f44336;
+            background-color: #dc3545;
             color: white;
         }
 
         /* Aba de Cadastros */
         .cadastros-panel {
             position: fixed;
-            top: 60px;
+            top: 0;
             right: -100%;
             width: 100%;
             max-width: 400px;
-            height: calc(100% - 60px);
+            height: 100%;
             background: white;
             z-index: 1500;
             transition: right 0.3s ease;
@@ -233,7 +262,7 @@
         }
 
         .panel-header {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #1a7431, #0d4d1f);
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -244,6 +273,9 @@
         .panel-header h3 {
             margin: 0;
             font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .close-panel {
@@ -297,35 +329,63 @@
 
         .cadastro-item {
             background: #f9f9f9;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 12px;
             margin-bottom: 10px;
             cursor: pointer;
-            transition: background 0.2s;
-            border-left: 4px solid #4CAF50;
+            transition: all 0.2s;
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
         .cadastro-item:active {
             background: #e8e8e8;
+            transform: scale(0.99);
         }
 
-        .cadastro-item h4 {
+        .cadastro-imagem {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #999;
+            flex-shrink: 0;
+        }
+
+        .cadastro-imagem img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .cadastro-info {
+            flex: 1;
+        }
+
+        .cadastro-info h4 {
             margin: 0 0 5px 0;
             color: #333;
-            font-size: 16px;
+            font-size: 15px;
         }
 
-        .cadastro-item p {
+        .cadastro-info p {
             margin: 3px 0;
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
         }
 
-        .cadastro-item .grupo-badge {
+        .cadastro-info .grupo-badge {
             display: inline-block;
             padding: 2px 8px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             margin-top: 5px;
         }
@@ -358,17 +418,18 @@
             padding: 10px;
             border: none;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 5px;
+            font-weight: 600;
         }
 
         .action-whatsapp { background: #25D366; color: white; }
         .action-edit { background: #2196F3; color: white; }
-        .action-delete { background: #f44336; color: white; }
+        .action-delete { background: #dc3545; color: white; }
         .action-change-address { background: #9c27b0; color: white; }
 
         /* Toast de notificação */
@@ -377,13 +438,13 @@
             bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             color: white;
             padding: 10px 20px;
             border-radius: 8px;
             z-index: 3000;
             display: none;
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
             max-width: 80%;
         }
@@ -409,32 +470,43 @@
             100% { transform: scale(2); opacity: 0; }
         }
 
-        .pulse-icon {
-            animation: pulse 1s infinite;
-        }
-
         @media (max-width: 768px) {
             .cadastros-panel {
                 max-width: 100%;
             }
-            .header-btn span {
-                display: none;
+            .logo-text {
+                font-size: 14px;
+            }
+            .logo-icon {
+                width: 35px;
+                height: 35px;
+                font-size: 20px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header Superior -->
+    <div id="map"></div>
+    
+    <!-- Header Superior com Logo -->
     <div class="app-header">
-        <h1><i class="fas fa-map-marker-alt"></i> Salva-Locais</h1>
-        <div class="header-buttons">
-            <button class="header-btn" id="btnCadastros">
-                <i class="fas fa-list"></i> <span>Cadastros</span>
+        <div class="header-top">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="logo-text">
+                    MAPA DO CRIME - NBO
+                    <small>Nova Brasilândia D'Oeste</small>
+                </div>
+            </div>
+        </div>
+        <div class="header-bottom">
+            <button class="btn-locais-salvos" id="btnLocaisSalvos">
+                <i class="fas fa-save"></i> Locais Salvos
             </button>
         </div>
     </div>
-
-    <div id="map"></div>
     
     <!-- Formulário de marcação -->
     <div class="overlay" id="formOverlay">
@@ -472,10 +544,10 @@
                 <div class="form-group">
                     <label><i class="fas fa-tag"></i> Grupo</label>
                     <select id="grupo" name="grupo">
-                        <option value="DROGAS">DROGAS (Vermelho)</option>
-                        <option value="HOMICÍDIO">HOMICÍDIO (Laranja)</option>
-                        <option value="ROUBO">ROUBO/FURTO (Amarelo)</option>
-                        <option value="OUTRO">OUTRO (Cinza)</option>
+                        <option value="DROGAS">🔴 DROGAS</option>
+                        <option value="HOMICÍDIO">🟠 HOMICÍDIO</option>
+                        <option value="ROUBO">🟡 ROUBO/FURTO</option>
+                        <option value="OUTRO">⚪ OUTRO</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -498,7 +570,7 @@
     <!-- Painel de Cadastros -->
     <div class="cadastros-panel" id="cadastrosPanel">
         <div class="panel-header">
-            <h3><i class="fas fa-database"></i> Cadastros Salvos</h3>
+            <h3><i class="fas fa-database"></i> Locais Salvos</h3>
             <button class="close-panel" onclick="closeCadastrosPanel()">&times;</button>
         </div>
         <button class="btn-voltar-mapa" onclick="closeCadastrosPanel()">
@@ -509,7 +581,7 @@
             <input type="text" id="searchCpf" placeholder="Buscar por CPF..." onkeyup="filterCadastros()">
             <div class="search-row">
                 <input type="text" id="searchEndereco" placeholder="Buscar por Rua/Avenida..." onkeyup="filterCadastros()">
-                <input type="text" id="searchNumero" placeholder="Número..." onkeyup="filterCadastros()" style="width: 80px;">
+                <input type="text" id="searchNumero" placeholder="Nº" onkeyup="filterCadastros()" style="width: 70px;">
             </div>
         </div>
         <div class="cadastros-list" id="cadastrosList">
@@ -547,13 +619,14 @@
         let touchStartCoords = null;
         let touchMoveTriggered = false;
         let isLongPressActive = false;
+        let markers = {}; // Objeto para armazenar referências dos marcadores
         
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             init();
             
-            // Botão cadastros
-            document.getElementById('btnCadastros').addEventListener('click', openCadastrosPanel);
+            // Botão Locais Salvos
+            document.getElementById('btnLocaisSalvos').addEventListener('click', openCadastrosPanel);
             document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
                 e.stopPropagation();
                 buscarNumeroPorLocalizacao();
@@ -577,37 +650,26 @@
             }).addTo(map);
             
             // EVENTOS PARA TOQUE LONGO NO CELULAR
-            // Método 1: Usando o container do mapa diretamente
             const mapContainer = map.getContainer();
             
-            // Eventos de toque para o container do mapa
             mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
             mapContainer.addEventListener('touchend', onTouchEnd);
             mapContainer.addEventListener('touchcancel', onTouchCancel);
             mapContainer.addEventListener('touchmove', onTouchMove, { passive: false });
             
-            // Eventos para mouse (desktop)
             mapContainer.addEventListener('mousedown', onMouseDown);
             mapContainer.addEventListener('mouseup', onMouseUp);
             mapContainer.addEventListener('mouseleave', onMouseCancel);
             
-            // Também usar eventos do Leaflet como fallback
-            map.on('touchstart', onLeafletTouchStart);
-            map.on('touchend', onLeafletTouchEnd);
-            map.on('touchcancel', onLeafletTouchCancel);
-            
             // Carregar marcadores
             loadCadastros();
             
-            showToast('Toque e segure por 2 segundos no mapa para marcar');
+            showToast('Toque e segure por 2 segundos no mapa para marcar um local');
         }
         
-        // EVENTOS PRINCIPAIS PARA TOQUE LONGO (MÉTODO MAIS CONFIÁVEL)
         function onTouchStart(e) {
-            // Prevenir comportamento padrão para não interferir
             e.preventDefault();
             
-            // Obter coordenadas do toque
             const touch = e.touches[0];
             const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
             touchStartCoords = { x: touch.clientX, y: touch.clientY };
@@ -615,17 +677,13 @@
             touchMoveTriggered = false;
             isLongPressActive = false;
             
-            // Mostrar indicador visual
             const indicator = document.getElementById('longPressIndicator');
             indicator.style.display = 'block';
             
-            // Configurar timeout para 2 segundos
             longPressTimeout = setTimeout(() => {
                 if (!touchMoveTriggered && touchStartCoords) {
                     isLongPressActive = true;
-                    // Esconder indicador
                     indicator.style.display = 'none';
-                    // Executar long press com as coordenadas salvas
                     handleLongPress(point);
                 }
             }, 2000);
@@ -634,7 +692,6 @@
         function onTouchMove(e) {
             if (!touchStartCoords) return;
             
-            // Verificar se moveu mais de 10px (considerado como scroll/drag)
             const touch = e.touches[0];
             const deltaX = Math.abs(touch.clientX - touchStartCoords.x);
             const deltaY = Math.abs(touch.clientY - touchStartCoords.y);
@@ -650,7 +707,6 @@
         }
         
         function onTouchEnd(e) {
-            // Limpar timeout
             if (longPressTimeout) {
                 clearTimeout(longPressTimeout);
                 longPressTimeout = null;
@@ -669,7 +725,6 @@
             touchStartCoords = null;
         }
         
-        // EVENTOS PARA MOUSE (DESKTOP)
         let mouseDownTime = 0;
         let mouseDownCoords = null;
         
@@ -702,35 +757,6 @@
             mouseDownCoords = null;
         }
         
-        // EVENTOS FALLBACK DO LEAFLET
-        let leafletTouchStartCoords = null;
-        let leafletTouchStartTime = 0;
-        
-        function onLeafletTouchStart(e) {
-            leafletTouchStartTime = Date.now();
-            if (e.touches && e.touches[0]) {
-                leafletTouchStartCoords = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-        }
-        
-        function onLeafletTouchEnd(e) {
-            // Se já foi processado pelos eventos nativos, ignorar
-            if (isLongPressActive) return;
-            
-            const duration = Date.now() - leafletTouchStartTime;
-            if (duration >= 2000 && leafletTouchStartCoords) {
-                // Long press detectado pelo Leaflet
-                if (e.latlng) {
-                    handleLongPress(e.latlng);
-                }
-            }
-            leafletTouchStartCoords = null;
-        }
-        
-        function onLeafletTouchCancel(e) {
-            leafletTouchStartCoords = null;
-        }
-        
         async function handleLongPress(latlng) {
             if (!latlng) return;
             
@@ -738,10 +764,9 @@
             
             currentLatLng = latlng;
             
-            // Mostrar marcador temporário com animação
             const tempMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
-                    html: '<div style="background-color: #4CAF50; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
+                    html: '<div style="background-color: #1a7431; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
                     iconSize: [30, 30],
                     className: 'temp-marker'
                 })
@@ -749,15 +774,12 @@
             
             setTimeout(() => map.removeLayer(tempMarker), 2000);
             
-            // Obter endereço
             currentAddress = await getAddress(latlng.lat, latlng.lng);
             currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
             
-            // Atualizar formulário
             document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
             document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
             
-            // Limpar campos
             document.getElementById('nome').value = '';
             document.getElementById('cpf').value = '';
             document.getElementById('contato').value = '';
@@ -770,10 +792,8 @@
             
             currentEditingId = null;
             
-            // Buscar número automaticamente
             await buscarNumeroPorLocalizacao();
             
-            // Abrir formulário
             document.getElementById('formOverlay').style.display = 'flex';
         }
         
@@ -782,7 +802,6 @@
             let enderecoSemNumero = endereco.replace(/,\s*\d+\s*,/, ',');
             enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+$/, '');
             enderecoSemNumero = enderecoSemNumero.replace(/-\s*\d+/, '');
-            enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+-\d+/, '');
             return enderecoSemNumero;
         }
         
@@ -802,16 +821,11 @@
         
         async function buscarNumeroPorLocalizacao() {
             if (!currentLatLng) return;
-            
             showToast('🔍 Buscando número...');
-            
             const numeroEncontrado = await simularBuscaNumero(currentLatLng.lat, currentLatLng.lng);
-            
             if (numeroEncontrado) {
                 document.getElementById('numero').value = numeroEncontrado;
                 showToast(`Número encontrado: ${numeroEncontrado}`);
-            } else {
-                showToast('Número não encontrado. Informe manualmente.');
             }
         }
         
@@ -824,7 +838,6 @@
             return null;
         }
         
-        // Upload de imagem
         document.getElementById('imagem').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -838,7 +851,6 @@
             }
         });
         
-        // Submissão do formulário
         document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -858,6 +870,13 @@
             const enderecoBase = document.getElementById('endereco').value;
             const enderecoCompleto = `${enderecoBase}, ${numero}`;
             
+            // Obter imagem base64 se existir
+            let imagemBase64 = '';
+            const imagemInput = document.getElementById('imagem');
+            if (imagemInput.files && imagemInput.files[0]) {
+                imagemBase64 = await convertImageToBase64(imagemInput.files[0]);
+            }
+            
             const formData = {
                 action: currentEditingId ? 'update' : 'add',
                 id: currentEditingId || Date.now().toString(),
@@ -870,7 +889,7 @@
                 nota: document.getElementById('nota').value,
                 grupo: document.getElementById('grupo').value,
                 numero: numero,
-                imagem: document.getElementById('preview').src || '',
+                imagem: imagemBase64 || document.getElementById('preview').src || '',
                 data: new Date().toISOString()
             };
             
@@ -887,7 +906,6 @@
                 showToast('✅ Salvo com sucesso!');
                 closeForm();
                 loadCadastros();
-                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
@@ -902,9 +920,17 @@
                 showToast('⚠️ Salvo localmente!');
                 closeForm();
                 loadCadastros();
-                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
             }
         });
+        
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
         
         function closeForm() {
             document.getElementById('formOverlay').style.display = 'none';
@@ -912,41 +938,67 @@
             currentEditingId = null;
         }
         
-        function addMarkerToMap(lat, lng, nome, grupo) {
-            const markerColor = getMarkerColor(grupo);
+        function createCustomMarker(grupo, nome, id) {
+            // Cores conforme solicitado: Vermelho para DROGAS, Laranja para HOMICÍDIO, Amarelo para ROUBO
+            let markerColor, iconColor;
+            switch(grupo) {
+                case 'DROGAS':
+                    markerColor = '#ff0000'; // Vermelho
+                    iconColor = 'white';
+                    break;
+                case 'HOMICÍDIO':
+                    markerColor = '#ff6600'; // Laranja
+                    iconColor = 'white';
+                    break;
+                case 'ROUBO':
+                    markerColor = '#ffcc00'; // Amarelo
+                    iconColor = '#333';
+                    break;
+                default:
+                    markerColor = '#607d8b';
+                    iconColor = 'white';
+            }
             
-            const markerHtml = L.divIcon({
-                html: `<div style="background-color: ${markerColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-                           <i class="fas fa-map-marker-alt" style="color: white; font-size: 14px;"></i>
+            return L.divIcon({
+                html: `<div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">
+                           <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
                        </div>`,
-                iconSize: [28, 28],
+                iconSize: [32, 32],
                 className: 'custom-marker',
-                popupAnchor: [0, -14]
+                popupAnchor: [0, -16]
             });
+        }
+        
+        function addMarkerToMap(lat, lng, nome, grupo, id, imagem) {
+            // Remover marcador existente se houver
+            if (markers[id]) {
+                map.removeLayer(markers[id]);
+            }
             
-            const marker = L.marker([lat, lng], { icon: markerHtml }).addTo(map);
+            const markerIcon = createCustomMarker(grupo, nome, id);
+            const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
+            
+            // Criar HTML do popup com imagem se existir
+            let imagemHtml = '';
+            if (imagem && imagem.startsWith('data:image')) {
+                imagemHtml = `<div style="text-align: center; margin-bottom: 8px;">
+                                <img src="${imagem}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid ${grupo === 'DROGAS' ? '#ff0000' : (grupo === 'HOMICÍDIO' ? '#ff6600' : '#ffcc00')}">
+                              </div>`;
+            }
             
             marker.bindPopup(`
-                <div style="min-width: 150px;">
-                    <b style="font-size: 14px;">${escapeHtml(nome)}</b><br>
-                    <span style="color: ${markerColor}; font-weight: bold;">● ${grupo}</span><br>
-                    <button onclick="verCadastroDetalhe('${nome}')" style="margin-top: 5px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                <div style="min-width: 180px;">
+                    ${imagemHtml}
+                    <b style="font-size: 15px;">${escapeHtml(nome)}</b><br>
+                    <span style="color: ${grupo === 'DROGAS' ? '#ff0000' : (grupo === 'HOMICÍDIO' ? '#ff6600' : '#ffcc00')}; font-weight: bold;">● ${grupo}</span><br>
+                    <button onclick="verCadastroDetalhe('${id}')" style="margin-top: 8px; padding: 5px 12px; background: #1a7431; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
                         Ver detalhes
                     </button>
                 </div>
             `);
             
+            markers[id] = marker;
             return marker;
-        }
-        
-        function getMarkerColor(grupo) {
-            const cores = {
-                'DROGAS': '#ff0000',
-                'HOMICÍDIO': '#ff6600',
-                'ROUBO': '#ffcc00',
-                'OUTRO': '#607d8b'
-            };
-            return cores[grupo] || '#4CAF50';
         }
         
         async function loadCadastros() {
@@ -959,15 +1011,18 @@
                     allCadastros = data.cadastros;
                     renderCadastrosList();
                     
-                    map.eachLayer((layer) => {
-                        if (layer instanceof L.Marker && !(layer instanceof L.TileLayer)) {
-                            map.removeLayer(layer);
+                    // Limpar todos os marcadores
+                    Object.keys(markers).forEach(key => {
+                        if (markers[key]) {
+                            map.removeLayer(markers[key]);
                         }
                     });
+                    markers = {};
                     
+                    // Recriar marcadores
                     allCadastros.forEach(cad => {
                         if (cad.lat && cad.lng) {
-                            addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo);
+                            addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
                         }
                     });
                 } else {
@@ -979,9 +1034,14 @@
                 allCadastros = localData;
                 renderCadastrosList();
                 
+                Object.keys(markers).forEach(key => {
+                    if (markers[key]) map.removeLayer(markers[key]);
+                });
+                markers = {};
+                
                 allCadastros.forEach(cad => {
                     if (cad.lat && cad.lng) {
-                        addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo);
+                        addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
                     }
                 });
             }
@@ -994,15 +1054,27 @@
                 return;
             }
             
-            container.innerHTML = allCadastros.map(cad => `
-                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')" style="border-left-color: ${getMarkerColor(cad.grupo)}">
-                    <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
-                    <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
-                    <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
-                    <p><i class="fas fa-calendar"></i> ${cad.data ? new Date(cad.data).toLocaleDateString() : new Date().toLocaleDateString()}</p>
-                    <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+            container.innerHTML = allCadastros.map(cad => {
+                let imagemHtml = '';
+                if (cad.imagem && cad.imagem.startsWith('data:image')) {
+                    imagemHtml = `<img src="${cad.imagem}" alt="foto">`;
+                } else {
+                    imagemHtml = `<i class="fas fa-user"></i>`;
+                }
+                
+                return `
+                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')">
+                    <div class="cadastro-imagem">
+                        ${imagemHtml}
+                    </div>
+                    <div class="cadastro-info">
+                        <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                        <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
+                        <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
+                        <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
         
         function getIconForGrupo(grupo) {
@@ -1036,14 +1108,27 @@
                 return;
             }
             
-            container.innerHTML = filtered.map(cad => `
-                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')" style="border-left-color: ${getMarkerColor(cad.grupo)}">
-                    <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
-                    <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
-                    <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
-                    <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+            container.innerHTML = filtered.map(cad => {
+                let imagemHtml = '';
+                if (cad.imagem && cad.imagem.startsWith('data:image')) {
+                    imagemHtml = `<img src="${cad.imagem}" alt="foto">`;
+                } else {
+                    imagemHtml = `<i class="fas fa-user"></i>`;
+                }
+                
+                return `
+                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')">
+                    <div class="cadastro-imagem">
+                        ${imagemHtml}
+                    </div>
+                    <div class="cadastro-info">
+                        <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                        <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
+                        <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
+                        <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
         
         function selectCadastro(id) {
@@ -1054,6 +1139,17 @@
                 
                 if (selectedCadastro.lat && selectedCadastro.lng) {
                     map.setView([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], 18);
+                    
+                    // Efeito de destaque no marcador
+                    if (markers[id]) {
+                        const markerElement = markers[id].getElement();
+                        if (markerElement) {
+                            markerElement.style.transform = 'scale(1.2)';
+                            setTimeout(() => {
+                                if (markerElement) markerElement.style.transform = 'scale(1)';
+                            }, 500);
+                        }
+                    }
                 }
             }
         }
@@ -1071,8 +1167,8 @@
         
         function shareWhatsApp() {
             if (!selectedCadastro) return;
-            const message = `📍 *Localização:* ${selectedCadastro.nome}\n📍 *Endereço:* ${selectedCadastro.endereco}\n🏷️ *Grupo:* ${selectedCadastro.grupo}\n📝 *Nota:* ${selectedCadastro.nota || 'N/A'}\n🗺️ *Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+            const message = `📍 *MAPA DO CRIME - NBO*%0A%0A*Local:* ${selectedCadastro.nome}%0A*Endereço:* ${selectedCadastro.endereco}%0A*Grupo:* ${selectedCadastro.grupo}%0A*Nota:* ${selectedCadastro.nota || 'N/A'}%0A*Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
+            window.open(`https://wa.me/?text=${message}`, '_blank');
         }
         
         function editCadastro() {
@@ -1115,12 +1211,25 @@
                     body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
                 });
                 showToast('🗑️ Excluído com sucesso!');
+                
+                // Remover marcador do mapa
+                if (markers[selectedCadastro.id]) {
+                    map.removeLayer(markers[selectedCadastro.id]);
+                    delete markers[selectedCadastro.id];
+                }
+                
                 loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
             } catch (error) {
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 localData = localData.filter(c => c.id != selectedCadastro.id);
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
+                
+                if (markers[selectedCadastro.id]) {
+                    map.removeLayer(markers[selectedCadastro.id]);
+                    delete markers[selectedCadastro.id];
+                }
+                
                 showToast('⚠️ Excluído localmente!');
                 loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
@@ -1185,21 +1294,9 @@
             return div.innerHTML;
         }
         
-        function verCadastroDetalhe(nome) {
-            const cad = allCadastros.find(c => c.nome === nome);
-            if (cad) selectCadastro(cad.id);
+        function verCadastroDetalhe(id) {
+            selectCadastro(id);
         }
-        
-        // Adicionar animação
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(0.5); opacity: 1; }
-                100% { transform: scale(2); opacity: 0; }
-            }
-            .pulse-icon, .temp-marker { animation: pulse 1s infinite; }
-        `;
-        document.head.appendChild(style);
         
         // Expor funções globalmente
         window.verCadastroDetalhe = verCadastroDetalhe;
@@ -1212,6 +1309,18 @@
         window.changeAddressMode = changeAddressMode;
         window.closeForm = closeForm;
         window.openCadastrosPanel = openCadastrosPanel;
+        
+        // Animação de pulso
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(0.5); opacity: 1; }
+                100% { transform: scale(2); opacity: 0; }
+            }
+            .temp-marker { animation: pulse 1s infinite; }
+            .custom-marker div:hover { transform: scale(1.1); transition: transform 0.2s; }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
