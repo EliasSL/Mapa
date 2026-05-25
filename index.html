@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Salva-Locais - Marcador de Localizações</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -72,13 +72,8 @@
             transition: background 0.3s;
         }
 
-        .header-btn:hover, .header-btn:active {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Botão flutuante (removido pois agora tem header) */
-        .fab-cadastros {
-            display: none;
+        .header-btn:active {
+            background: rgba(255,255,255,0.4);
         }
 
         /* Overlay e Formulário */
@@ -168,11 +163,6 @@
             margin-bottom: 10px;
             font-size: 14px;
             border-left: 3px solid #4CAF50;
-        }
-
-        .endereco-completo span {
-            font-weight: bold;
-            color: #333;
         }
 
         .numero-row {
@@ -280,7 +270,7 @@
             border-bottom: 1px solid #eee;
         }
 
-        .search-box input, .search-box select {
+        .search-box input {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -315,8 +305,8 @@
             border-left: 4px solid #4CAF50;
         }
 
-        .cadastro-item:hover, .cadastro-item:active {
-            background: #f0f0f0;
+        .cadastro-item:active {
+            background: #e8e8e8;
         }
 
         .cadastro-item h4 {
@@ -398,18 +388,20 @@
             max-width: 80%;
         }
 
-        /* Indicador de loading */
-        .loading-indicator {
+        /* Indicador de long press */
+        .long-press-indicator {
             position: fixed;
-            top: 50%;
+            bottom: 100px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: rgba(0,0,0,0.7);
             color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            z-index: 3500;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 2500;
             display: none;
+            pointer-events: none;
         }
 
         @keyframes pulse {
@@ -428,9 +420,6 @@
             .header-btn span {
                 display: none;
             }
-            .header-btn {
-                padding: 8px 12px;
-            }
         }
     </style>
 </head>
@@ -439,7 +428,7 @@
     <div class="app-header">
         <h1><i class="fas fa-map-marker-alt"></i> Salva-Locais</h1>
         <div class="header-buttons">
-            <button class="header-btn" id="btnCadastros" onclick="openCadastrosPanel()">
+            <button class="header-btn" id="btnCadastros">
                 <i class="fas fa-list"></i> <span>Cadastros</span>
             </button>
         </div>
@@ -506,7 +495,7 @@
         </div>
     </div>
 
-    <!-- Painel de Cadastros com busca avançada -->
+    <!-- Painel de Cadastros -->
     <div class="cadastros-panel" id="cadastrosPanel">
         <div class="panel-header">
             <h3><i class="fas fa-database"></i> Cadastros Salvos</h3>
@@ -537,7 +526,7 @@
     </div>
 
     <div class="toast" id="toast"></div>
-    <div class="loading-indicator" id="loadingIndicator">Carregando...</div>
+    <div class="long-press-indicator" id="longPressIndicator">⏱️ Mantenha pressionado para marcar...</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -546,7 +535,7 @@
         
         // Variáveis globais
         let map;
-        let longPressTimer = null;
+        let longPressTimeout = null;
         let currentLatLng = null;
         let currentAddress = '';
         let currentAddressWithoutNumber = '';
@@ -554,145 +543,221 @@
         let selectedCadastro = null;
         let isChangingAddressMode = false;
         let currentEditingId = null;
+        let touchStartTime = 0;
+        let touchStartCoords = null;
+        let touchMoveTriggered = false;
         let isLongPressActive = false;
         
         // Inicialização
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            
+            // Botão cadastros
+            document.getElementById('btnCadastros').addEventListener('click', openCadastrosPanel);
+            document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                buscarNumeroPorLocalizacao();
+            });
+        });
         
         function init() {
-            // Inicializar mapa com visualização Satélite Híbrido
+            // Inicializar mapa
             map = L.map('map', {
-                tap: true,          // Habilita tap para mobile
-                touchZoom: true,    // Habilita zoom por toque
-                dragging: true      // Habilita arrastar
+                tap: true,
+                touchZoom: true,
+                dragging: true,
+                tapTolerance: 10
             }).setView([-11.720739, -62.315405], 18);
             
-            // Camada Satélite Híbrido (Google Satélite com nomes de ruas)
+            // Camada Satélite Híbrido
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 attribution: '&copy; Google',
                 maxZoom: 20,
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
             }).addTo(map);
             
-            // CORREÇÃO DO TOQUE LONGO - Para mobile e desktop
-            // Evento para mouse (desktop)
-            map.on('mousedown', onPointerDown);
-            map.on('mouseup', onPointerUp);
-            map.on('mouseleave', onPointerCancel);
+            // EVENTOS PARA TOQUE LONGO NO CELULAR
+            // Método 1: Usando o container do mapa diretamente
+            const mapContainer = map.getContainer();
             
-            // Eventos para touch (mobile)
-            map.on('touchstart', onTouchStart);
-            map.on('touchend', onTouchEnd);
-            map.on('touchcancel', onTouchCancel);
+            // Eventos de toque para o container do mapa
+            mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
+            mapContainer.addEventListener('touchend', onTouchEnd);
+            mapContainer.addEventListener('touchcancel', onTouchCancel);
+            mapContainer.addEventListener('touchmove', onTouchMove, { passive: false });
             
-            // Prevenir zoom ao clicar no botão de busca
-            document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
-                e.stopPropagation();
-                buscarNumeroPorLocalizacao();
-            });
+            // Eventos para mouse (desktop)
+            mapContainer.addEventListener('mousedown', onMouseDown);
+            mapContainer.addEventListener('mouseup', onMouseUp);
+            mapContainer.addEventListener('mouseleave', onMouseCancel);
             
-            // Carregar marcadores existentes
+            // Também usar eventos do Leaflet como fallback
+            map.on('touchstart', onLeafletTouchStart);
+            map.on('touchend', onLeafletTouchEnd);
+            map.on('touchcancel', onLeafletTouchCancel);
+            
+            // Carregar marcadores
             loadCadastros();
             
-            showToast('Toque e segure por 3 segundos no mapa para marcar um local');
+            showToast('Toque e segure por 2 segundos no mapa para marcar');
         }
         
-        // Funções para toque longo
-        function onPointerDown(e) {
-            // Cancela qualquer timer anterior
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
+        // EVENTOS PRINCIPAIS PARA TOQUE LONGO (MÉTODO MAIS CONFIÁVEL)
+        function onTouchStart(e) {
+            // Prevenir comportamento padrão para não interferir
+            e.preventDefault();
             
+            // Obter coordenadas do toque
+            const touch = e.touches[0];
+            const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
+            touchStartCoords = { x: touch.clientX, y: touch.clientY };
+            touchStartTime = Date.now();
+            touchMoveTriggered = false;
             isLongPressActive = false;
             
-            // Inicia o timer de 3 segundos
-            longPressTimer = setTimeout(() => {
-                isLongPressActive = true;
-                const latlng = e.latlng;
-                if (latlng) {
-                    handleLongPress(latlng);
-                }
-            }, 3000);
-        }
-        
-        function onPointerUp(e) {
-            // Cancela o timer se não houve long press
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
-        }
-        
-        function onPointerCancel(e) {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
-        }
-        
-        function onTouchStart(e) {
-            // Para dispositivos touch, pega o primeiro toque
-            if (e.originalEvent && e.originalEvent.touches) {
-                const touch = e.originalEvent.touches[0];
-                const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
-                
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                
-                isLongPressActive = false;
-                
-                longPressTimer = setTimeout(() => {
+            // Mostrar indicador visual
+            const indicator = document.getElementById('longPressIndicator');
+            indicator.style.display = 'block';
+            
+            // Configurar timeout para 2 segundos
+            longPressTimeout = setTimeout(() => {
+                if (!touchMoveTriggered && touchStartCoords) {
                     isLongPressActive = true;
+                    // Esconder indicador
+                    indicator.style.display = 'none';
+                    // Executar long press com as coordenadas salvas
                     handleLongPress(point);
-                }, 3000);
+                }
+            }, 2000);
+        }
+        
+        function onTouchMove(e) {
+            if (!touchStartCoords) return;
+            
+            // Verificar se moveu mais de 10px (considerado como scroll/drag)
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartCoords.x);
+            const deltaY = Math.abs(touch.clientY - touchStartCoords.y);
+            
+            if (deltaX > 10 || deltaY > 10) {
+                touchMoveTriggered = true;
+                if (longPressTimeout) {
+                    clearTimeout(longPressTimeout);
+                    longPressTimeout = null;
+                }
+                document.getElementById('longPressIndicator').style.display = 'none';
             }
         }
         
         function onTouchEnd(e) {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
+            // Limpar timeout
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
             }
+            document.getElementById('longPressIndicator').style.display = 'none';
+            touchStartCoords = null;
+            touchMoveTriggered = false;
         }
         
         function onTouchCancel(e) {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
             }
+            document.getElementById('longPressIndicator').style.display = 'none';
+            touchStartCoords = null;
+        }
+        
+        // EVENTOS PARA MOUSE (DESKTOP)
+        let mouseDownTime = 0;
+        let mouseDownCoords = null;
+        
+        function onMouseDown(e) {
+            mouseDownTime = Date.now();
+            mouseDownCoords = { x: e.clientX, y: e.clientY };
+            
+            const point = map.containerPointToLatLng([e.clientX, e.clientY]);
+            
+            longPressTimeout = setTimeout(() => {
+                if (mouseDownCoords) {
+                    handleLongPress(point);
+                }
+            }, 2000);
+        }
+        
+        function onMouseUp(e) {
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
+            }
+            mouseDownCoords = null;
+        }
+        
+        function onMouseCancel(e) {
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
+            }
+            mouseDownCoords = null;
+        }
+        
+        // EVENTOS FALLBACK DO LEAFLET
+        let leafletTouchStartCoords = null;
+        let leafletTouchStartTime = 0;
+        
+        function onLeafletTouchStart(e) {
+            leafletTouchStartTime = Date.now();
+            if (e.touches && e.touches[0]) {
+                leafletTouchStartCoords = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }
+        
+        function onLeafletTouchEnd(e) {
+            // Se já foi processado pelos eventos nativos, ignorar
+            if (isLongPressActive) return;
+            
+            const duration = Date.now() - leafletTouchStartTime;
+            if (duration >= 2000 && leafletTouchStartCoords) {
+                // Long press detectado pelo Leaflet
+                if (e.latlng) {
+                    handleLongPress(e.latlng);
+                }
+            }
+            leafletTouchStartCoords = null;
+        }
+        
+        function onLeafletTouchCancel(e) {
+            leafletTouchStartCoords = null;
         }
         
         async function handleLongPress(latlng) {
             if (!latlng) return;
             
-            showToast('Marcando local...');
+            showToast('📍 Marcando local...');
             
             currentLatLng = latlng;
             
-            // Mostrar marcador temporário
+            // Mostrar marcador temporário com animação
             const tempMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
-                    html: '<div style="background-color: #4CAF50; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; animation: pulse 1s infinite;"></div>',
-                    iconSize: [20, 20],
+                    html: '<div style="background-color: #4CAF50; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
+                    iconSize: [30, 30],
                     className: 'temp-marker'
                 })
             }).addTo(map);
             
-            setTimeout(() => map.removeLayer(tempMarker), 1500);
+            setTimeout(() => map.removeLayer(tempMarker), 2000);
             
-            // Obter endereço via reverse geocoding
+            // Obter endereço
             currentAddress = await getAddress(latlng.lat, latlng.lng);
             currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
             
-            // Atualizar display do endereço
+            // Atualizar formulário
             document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
             document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
             
-            // Limpar formulário
+            // Limpar campos
             document.getElementById('nome').value = '';
             document.getElementById('cpf').value = '';
             document.getElementById('contato').value = '';
@@ -703,10 +768,9 @@
             document.getElementById('preview').style.display = 'none';
             document.getElementById('preview').src = '';
             
-            // Reset current editing
             currentEditingId = null;
             
-            // Tentar buscar número automaticamente
+            // Buscar número automaticamente
             await buscarNumeroPorLocalizacao();
             
             // Abrir formulário
@@ -715,10 +779,10 @@
         
         function removerNumeroDoEndereco(endereco) {
             if (!endereco) return '';
-            // Remove números que parecem ser números de casa
             let enderecoSemNumero = endereco.replace(/,\s*\d+\s*,/, ',');
             enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+$/, '');
             enderecoSemNumero = enderecoSemNumero.replace(/-\s*\d+/, '');
+            enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+-\d+/, '');
             return enderecoSemNumero;
         }
         
@@ -739,9 +803,8 @@
         async function buscarNumeroPorLocalizacao() {
             if (!currentLatLng) return;
             
-            showToast('Buscando número da localização...');
+            showToast('🔍 Buscando número...');
             
-            // Simulação de busca de número baseado nas coordenadas
             const numeroEncontrado = await simularBuscaNumero(currentLatLng.lat, currentLatLng.lng);
             
             if (numeroEncontrado) {
@@ -753,7 +816,6 @@
         }
         
         async function simularBuscaNumero(lat, lng) {
-            // Simulação - substitua por sua base de dados real
             const latHash = Math.floor(Math.abs(lat) * 10000) % 100;
             const lngHash = Math.floor(Math.abs(lng) * 10000) % 100;
             if (latHash > 0 || lngHash > 0) {
@@ -793,7 +855,6 @@
                 return;
             }
             
-            // Montar endereço completo com número
             const enderecoBase = document.getElementById('endereco').value;
             const enderecoCompleto = `${enderecoBase}, ${numero}`;
             
@@ -813,26 +874,23 @@
                 data: new Date().toISOString()
             };
             
-            showToast('Salvando...');
+            showToast('💾 Salvando...');
             
             try {
-                const response = await fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
                 
-                showToast('Salvo com sucesso!');
+                showToast('✅ Salvo com sucesso!');
                 closeForm();
                 loadCadastros();
                 addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
-                // Fallback: salvar localmente
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 if (currentEditingId) {
                     const index = localData.findIndex(c => c.id == currentEditingId);
@@ -841,7 +899,7 @@
                     localData.push(formData);
                 }
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                showToast('Salvo localmente!');
+                showToast('⚠️ Salvo localmente!');
                 closeForm();
                 loadCadastros();
                 addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
@@ -892,7 +950,7 @@
         }
         
         async function loadCadastros() {
-            showToast('Carregando cadastros...');
+            showToast('🔄 Carregando cadastros...');
             
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=get`);
@@ -901,7 +959,6 @@
                     allCadastros = data.cadastros;
                     renderCadastrosList();
                     
-                    // Limpar marcadores existentes
                     map.eachLayer((layer) => {
                         if (layer instanceof L.Marker && !(layer instanceof L.TileLayer)) {
                             map.removeLayer(layer);
@@ -917,7 +974,7 @@
                     throw new Error('Sem dados');
                 }
             } catch (error) {
-                console.error('Erro ao carregar da planilha, usando localStorage:', error);
+                console.error('Erro ao carregar:', error);
                 const localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 allCadastros = localData;
                 renderCadastrosList();
@@ -993,7 +1050,7 @@
             selectedCadastro = allCadastros.find(c => c.id == id);
             if (selectedCadastro) {
                 document.getElementById('actionsFooter').classList.add('show');
-                showToast(`Selecionado: ${selectedCadastro.nome}`);
+                showToast(`📍 Selecionado: ${selectedCadastro.nome}`);
                 
                 if (selectedCadastro.lat && selectedCadastro.lng) {
                     map.setView([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], 18);
@@ -1015,8 +1072,7 @@
         function shareWhatsApp() {
             if (!selectedCadastro) return;
             const message = `📍 *Localização:* ${selectedCadastro.nome}\n📍 *Endereço:* ${selectedCadastro.endereco}\n🏷️ *Grupo:* ${selectedCadastro.grupo}\n📝 *Nota:* ${selectedCadastro.nota || 'N/A'}\n🗺️ *Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
-            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
         }
         
         function editCadastro() {
@@ -1058,14 +1114,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
                 });
-                showToast('Excluído com sucesso!');
+                showToast('🗑️ Excluído com sucesso!');
                 loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
             } catch (error) {
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 localData = localData.filter(c => c.id != selectedCadastro.id);
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                showToast('Excluído localmente!');
+                showToast('⚠️ Excluído localmente!');
                 loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
             }
@@ -1075,7 +1131,7 @@
             if (!selectedCadastro) return;
             isChangingAddressMode = true;
             closeCadastrosPanel();
-            showToast('Clique no mapa para selecionar o novo endereço');
+            showToast('📍 Clique no mapa para selecionar o novo endereço');
             
             map.once('click', async (e) => {
                 const newLatLng = e.latlng;
@@ -1099,14 +1155,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ action: 'update', ...updatedCadastro })
                     });
-                    showToast('Endereço atualizado!');
+                    showToast('✅ Endereço atualizado!');
                     loadCadastros();
                 } catch (error) {
                     let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                     const index = localData.findIndex(c => c.id == selectedCadastro.id);
                     if (index !== -1) localData[index] = updatedCadastro;
                     localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                    showToast('Endereço atualizado localmente!');
+                    showToast('⚠️ Endereço atualizado localmente!');
                     loadCadastros();
                 }
                 isChangingAddressMode = false;
@@ -1141,8 +1197,7 @@
                 0% { transform: scale(0.5); opacity: 1; }
                 100% { transform: scale(2); opacity: 0; }
             }
-            .pulse-icon { animation: pulse 1s infinite; }
-            .temp-marker { animation: pulse 1s infinite; }
+            .pulse-icon, .temp-marker { animation: pulse 1s infinite; }
         `;
         document.head.appendChild(style);
         
