@@ -1,413 +1,1057 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Salva-Locais - Versão Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Salva-Locais - Marcador de Localizações</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        body, html { height: 100%; width: 100%; overflow: hidden; background: #f0f0f0; }
-        .app-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
-        .app-header { background: #0081c9; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-        .header-title { font-size: 20px; font-weight: 500; }
-        .header-icon { font-size: 20px; cursor: pointer; padding: 10px; min-width: 44px; text-align: center; }
-        #map { flex: 1; width: 100%; z-index: 1; }
-        .map-footer-buttons { position: absolute; bottom: 20px; left: 5%; width: 90%; display: flex; gap: 15px; z-index: 500; }
-        .btn-footer { flex: 1; background: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; color: #0081c9; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); cursor: pointer; }
-        .sidebar { position: absolute; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.3s; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
-        .sidebar.open { left: 0; }
-        .sidebar-header { background: #0081c9; color: white; padding: 20px; text-align: center; }
-        .sidebar-menu { list-style: none; }
-        .sidebar-item { padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; cursor: pointer; }
-        .sidebar-item-left { display: flex; align-items: center; gap: 15px; }
-        .sidebar-item i { color: #0081c9; width: 20px; }
-        .screen-overlay { position: absolute; top: 56px; left: 0; width: 100%; height: calc(100% - 56px); background: #f8f9fa; z-index: 1500; display: none; flex-direction: column; overflow-y: auto; }
-        .form-group { padding: 15px 20px; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 8px 0 12px; font-size: 14px; background: white; }
-        .photo-preview { width: 100%; height: 180px; background: #e9ecef; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; border: 2px dashed #adb5bd; }
-        .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
-        .photo-placeholder { text-align: center; color: #6c757d; }
-        .photo-placeholder i { font-size: 48px; }
-        .coordinate-display { background: #e9ecef; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
-        .btn-row-3 { display: flex; gap: 15px; padding: 20px; }
-        .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-cancel { background: #6c757d; color: white; }
-        .btn-save { background: #0081c9; color: white; }
-        .btn-delete { background: #dc3545; color: white; }
-        .location-card { background: white; margin: 12px; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .card-header-row { display: flex; gap: 12px; }
-        .card-info { flex: 1; }
-        .card-thumb { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: #e9ecef; }
-        .card-actions { display: flex; justify-content: space-around; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e9ecef; }
-        .card-action-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 6px; font-size: 12px; }
-        .btn-act-send { color: #25D366; }
-        .btn-act-edit { color: #0081c9; }
-        .btn-act-del { color: #dc3545; }
-        .modal-popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
-        .modal-content { background: white; width: 85%; max-width: 320px; border-radius: 12px; padding: 20px; }
-        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
-        .radio-option { padding: 12px 0; cursor: pointer; border-bottom: 1px solid #eee; }
-        .backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1900; display: none; }
-        .search-bar-container { padding: 12px 15px; position: relative; background: white; border-bottom: 1px solid #e9ecef; }
-        .search-input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 25px; }
-        .sort-button { position: absolute; right: 25px; top: 18px; background: none; border: none; font-size: 18px; color: #0081c9; cursor: pointer; }
-        .loading-indicator { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 8px; z-index: 4000; display: none; align-items: center; gap: 10px; }
-        .long-press-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 600; opacity: 0; transition: opacity 0.3s; white-space: nowrap; font-size: 13px; }
-        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #0f0; font-size: 11px; padding: 4px 8px; z-index: 5000; font-family: monospace; text-align: center; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-indicator i { animation: spin 1s linear infinite; }
-        .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
-        .list-return-map { margin: 15px; background: #e1f5fe; color: #0081c9; border: none; padding: 12px; border-radius: 20px; cursor: pointer; font-weight: bold; width: calc(100% - 30px); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Mapa */
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Botão flutuante */
+        .fab-cadastros {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .fab-cadastros:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* Overlay e Formulário */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .form-container {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .form-container h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, 
+        .form-group textarea, 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-group input[type="file"] {
+            padding: 5px;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 150px;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+
+        .endereco-completo {
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            border-left: 3px solid #4CAF50;
+        }
+
+        .endereco-completo span {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .numero-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .numero-row input {
+            flex: 1;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-primary:hover, .btn-secondary:hover {
+            opacity: 0.9;
+        }
+
+        /* Aba de Cadastros */
+        .cadastros-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: white;
+            z-index: 1500;
+            transition: right 0.3s ease;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cadastros-panel.open {
+            right: 0;
+        }
+
+        .panel-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+        }
+
+        .close-panel {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .btn-voltar-mapa {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .search-box {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .cadastros-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .cadastro-item {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .cadastro-item:hover {
+            background: #f0f0f0;
+        }
+
+        .cadastro-item h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .cadastro-item p {
+            margin: 3px 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .cadastro-item .grupo-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .grupo-DROGAS { background: #ff0000; color: white; }
+        .grupo-HOMICÍDIO { background: #ff6600; color: white; }
+        .grupo-ROUBO { background: #ffcc00; color: #333; }
+        .grupo-OUTRO { background: #607d8b; color: white; }
+
+        /* Rodapé de ações */
+        .actions-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #ddd;
+            padding: 12px;
+            display: none;
+            gap: 10px;
+            z-index: 1600;
+        }
+
+        .actions-footer.show {
+            display: flex;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .action-whatsapp { background: #25D366; color: white; }
+        .action-edit { background: #2196F3; color: white; }
+        .action-delete { background: #f44336; color: white; }
+        .action-change-address { background: #9c27b0; color: white; }
+
+        /* Toast de notificação */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 3000;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .cadastros-panel {
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="app-header">
-            <i class="fa-solid fa-bars header-icon" id="menuBtn"></i>
-            <span class="header-title" id="pageTitle">Salva-Locais</span>
-            <i class="fa-solid fa-layer-group header-icon" id="mapTypeBtn"></i>
-        </div>
-        <div id="map"></div>
-        <div class="map-footer-buttons">
-            <button class="btn-footer" onclick="showScreen('map')"><i class="fa-solid fa-map"></i> Mapa</button>
-            <button class="btn-footer" onclick="showSavedLocationsScreen()"><i class="fa-solid fa-list"></i> Meus Locais</button>
-        </div>
-        <div class="long-press-toast" id="longPressToast"><i class="fa-solid fa-hand-pointer"></i> Toque e segure no mapa</div>
-        <div class="backdrop" id="backdrop" onclick="closeSidebar()"></div>
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">Painel Operacional</div>
-            <ul class="sidebar-menu">
-                <li class="sidebar-item" onclick="getActualLocation()"><div class="sidebar-item-left"><i class="fa-solid fa-location-arrow"></i> <span>Minha Localização</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="showSavedLocationsScreen()"><div class="sidebar-item-left"><i class="fa-solid fa-list-ul"></i> <span>Locais Salvos</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="openNewGroupModal()"><div class="sidebar-item-left"><i class="fa-solid fa-plus-circle"></i> <span>Novo Grupo</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="carregarDaPlanilha()"><div class="sidebar-item-left"><i class="fa-solid fa-sync"></i> <span>Sincronizar</span></div><i class="fa-solid fa-chevron-right"></i></li>
-            </ul>
-        </div>
-        <div class="screen-overlay" id="screenSaveLocation">
-            <div class="form-group">
-                <div class="photo-preview" id="photoPreview" onclick="triggerPhotoUpload()">
-                    <div class="photo-placeholder" id="photoPlaceholder"><i class="fa-solid fa-camera"></i><p>Toque para foto</p></div>
-                    <img id="selectedPhoto" style="display: none;">
+    <div id="map"></div>
+    
+    <div class="fab-cadastros" id="fabCadastros">
+        <i class="fas fa-list fa-2x"></i>
+    </div>
+
+    <!-- Formulário de marcação -->
+    <div class="overlay" id="formOverlay">
+        <div class="form-container">
+            <h2><i class="fas fa-map-marker-alt"></i> Nova Marcação</h2>
+            <form id="cadastroForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Nome *</label>
+                    <input type="text" id="nome" name="nome" required>
                 </div>
-                <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)">
-                <div class="coordinate-display"><i class="fa-solid fa-location-dot"></i> <strong>Coordenadas</strong><br><span id="txtLat"></span>° , <span id="txtLng"></span>°</div>
-                <input type="text" class="form-control" id="locName" placeholder="Nome do Local *">
-                <input type="text" class="form-control" id="locCpf" placeholder="CPF">
-                <input type="text" class="form-control" id="locAddress" placeholder="Endereço">
-                <input type="text" class="form-control" id="locContact" placeholder="Telefone">
-                <textarea class="form-control" id="locNote" rows="2" placeholder="Observações"></textarea>
-                <label>Grupo:</label>
-                <select class="form-control" id="locGroupSelect"></select>
-            </div>
-            <div class="btn-row-3">
-                <button class="btn btn-cancel" onclick="closeFormAndShowMap()">Cancelar</button>
-                <button class="btn btn-save" id="saveLocationBtn" onclick="saveLocationData()">Salvar</button>
-                <button class="btn btn-delete" id="deleteLocationBtn" onclick="deleteCurrentLocation()" style="display: none;">Excluir</button>
-            </div>
-        </div>
-        <div class="screen-overlay" id="screenSavedList">
-            <div class="search-bar-container"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="searchBar" placeholder="Pesquisar..." oninput="renderSavedList()"><button class="sort-button" onclick="openSortModal()"><i class="fa-solid fa-sort"></i></button></div>
-            <div id="savedListContainer" style="flex:1; overflow-y: auto;"></div>
-            <button class="list-return-map" onclick="closeFormAndShowMap()"><i class="fa-solid fa-arrow-left"></i> Voltar ao Mapa</button>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> CPF</label>
+                    <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-phone"></i> Contato</label>
+                    <input type="text" id="contato" name="contato" placeholder="(00) 00000-0000">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-map-pin"></i> Endereço (automático)</label>
+                    <div class="endereco-completo" id="enderecoCompleto">
+                        <span>Endereço detectado:</span><br>
+                        <span id="enderecoDetectado">Aguardando...</span>
+                    </div>
+                    <input type="hidden" id="endereco" name="endereco">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-hashtag"></i> Número da Casa/Lote *</label>
+                    <div class="numero-row">
+                        <input type="text" id="numero" name="numero" placeholder="Ex: 123, Lote 5, Quadra 3" required>
+                        <button type="button" id="buscarNumeroBtn" class="btn-primary" style="padding: 10px 15px; width: auto;">🔍 Buscar</button>
+                    </div>
+                    <small style="color: #666;">Informe o número da casa, lote ou quadra</small>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Grupo</label>
+                    <select id="grupo" name="grupo">
+                        <option value="DROGAS">DROGAS (Vermelho)</option>
+                        <option value="HOMICÍDIO">HOMICÍDIO (Laranja)</option>
+                        <option value="ROUBO">ROUBO/FURTO (Amarelo)</option>
+                        <option value="OUTRO">OUTRO (Cinza)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> Nota/Observação</label>
+                    <textarea id="nota" name="nota" placeholder="Informações adicionais..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-image"></i> Imagem</label>
+                    <input type="file" id="imagem" name="imagem" accept="image/*">
+                    <img id="preview" class="preview-img" style="display:none;">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closeForm()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
         </div>
     </div>
-    <div class="loading-indicator" id="loadingIndicator"><i class="fa-solid fa-circle-notch"></i><span>Processando...</span></div>
-    <div class="status-bar" id="statusBar">🟡 Inicializando...</div>
-    
-    <div class="modal-popup" id="modalSort"><div class="modal-content"><div class="modal-title">Classificar</div><div class="radio-option" onclick="setSortOrder('date-desc')">📅 Mais recentes</div><div class="radio-option" onclick="setSortOrder('date-asc')">📅 Mais antigas</div><div class="radio-option" onclick="setSortOrder('alpha')">🔤 Alfabética</div></div></div>
-    <div class="modal-popup" id="modalNewGroup"><div class="modal-content"><div class="modal-title">Novo Grupo</div><input type="text" class="form-control" id="newGroupName" placeholder="Nome"><input type="color" id="newGroupColor" value="#0081c9"><div class="btn-row-3"><button class="btn btn-cancel" onclick="closeModal('modalNewGroup')">Cancelar</button><button class="btn btn-save" onclick="createNewGroup()">Criar</button></div></div></div>
-    <div class="modal-popup" id="modalMapType"><div class="modal-content"><div class="modal-title">Mapa</div><div class="radio-option" onclick="changeMapLayer('street')">🗺️ Padrão</div><div class="radio-option" onclick="changeMapLayer('satellite')">🛰️ Satélite</div></div></div>
-    <div class="modal-popup" id="modalSendWhatsApp"><div class="modal-content"><div class="modal-title"><i class="fa-brands fa-whatsapp"></i> WhatsApp</div><div class="radio-option" onclick="processarEnvioWhatsApp('web')">💻 Web</div><div class="radio-option" onclick="processarEnvioWhatsApp('api')">📱 Mobile</div><button class="btn btn-cancel" onclick="closeModal('modalSendWhatsApp')" style="margin-top:15px;">Fechar</button></div></div>
-    
+
+    <!-- Painel de Cadastros -->
+    <div class="cadastros-panel" id="cadastrosPanel">
+        <div class="panel-header">
+            <h3><i class="fas fa-database"></i> Cadastros Salvos</h3>
+            <button class="close-panel" onclick="closeCadastrosPanel()">&times;</button>
+        </div>
+        <button class="btn-voltar-mapa" onclick="closeCadastrosPanel()">
+            <i class="fas fa-arrow-left"></i> Voltar para o Mapa
+        </button>
+        <div class="search-box">
+            <input type="text" id="searchCadastros" placeholder="Pesquisar pelo nome da localização..." onkeyup="filterCadastros()">
+        </div>
+        <div class="cadastros-list" id="cadastrosList">
+            <div style="text-align: center; padding: 20px;">Carregando...</div>
+        </div>
+    </div>
+
+    <!-- Rodapé de ações -->
+    <div class="actions-footer" id="actionsFooter">
+        <button class="action-btn action-whatsapp" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> Compartilhar</button>
+        <button class="action-btn action-edit" onclick="editCadastro()"><i class="fas fa-edit"></i> Editar</button>
+        <button class="action-btn action-delete" onclick="deleteCadastro()"><i class="fas fa-trash"></i> Excluir</button>
+        <button class="action-btn action-change-address" onclick="changeAddressMode()"><i class="fas fa-map-marker-alt"></i> Alterar Endereço</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 🔴🔴🔴 COLE O ID DA SUA PLANILHA AQUI 🔴🔴🔴
-        // Exemplo: "1ABC123DEF456GHI789"
-        const SHEET_ID = "1H3S0KHquj-2ylj34OSjYDs9sg2yjNofNxiawzYb1woY";
+        // Configuração
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec';
+        const SHEET_ID = '1H3S0KHquj-2ylj34OSjYDs9sg2yjNofNxiawzYb1woY';
         
-        // URL para ler dados (JSON)
-        const READ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+        // Variáveis globais
+        let map;
+        let longPressTimer;
+        let isLongPress = false;
+        let currentMarker = null;
+        let currentLatLng = null;
+        let currentAddress = '';
+        let currentAddressWithoutNumber = '';
+        let allCadastros = [];
+        let selectedCadastro = null;
+        let isChangingAddressMode = false;
+        let tempAddressMarker = null;
+        let currentEditingId = null;
         
-        // URL para escrever dados (form submit)
-        const WRITE_URL = `https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec`; // Vamos usar método alternativo
+        // Mapeamento de números (simulação - pode ser expandido com dados reais)
+        let addressNumberDatabase = {};
         
-        let locations = [], groups = [{ id:"DROGAS", name:"DROGAS", color:"#e74c3c" }, { id:"ROUBO", name:"ROUBO", color:"#f39c12" }, { id:"HOMICIDIO", name:"HOMICÍDIO", color:"#8e44ad" }];
-        let currentSortOrder = 'date-desc', editingLocationId = null, currentSelectedCoords = null, currentPhotoData = null, markers = {}, currentMapLayer = 'street', locationIdParaEnvio = null;
-        const initialCoords = [-11.722502, -62.327864];
-        let map = L.map('map', { zoomControl: false }).setView(initialCoords, 16);
-        L.control.zoom({ position: 'topright' }).addTo(map);
-        const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-        const hybridGroup = L.layerGroup([L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'), L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}')]);
-        streetLayer.addTo(map);
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', init);
         
-        function atualizarStatus(msg, isError = false) {
-            const bar = document.getElementById('statusBar');
-            bar.innerHTML = isError ? `🔴 ${msg}` : `🟢 ${msg}`;
-            bar.style.color = isError ? '#ff6666' : '#66ff66';
-            console.log(`[STATUS] ${msg}`);
-        }
-        
-        function showLoading(msg) { let l = document.getElementById('loadingIndicator'); l.querySelector('span').innerText = msg; l.style.display = 'flex'; atualizarStatus(msg); }
-        function hideLoading() { document.getElementById('loadingIndicator').style.display = 'none'; }
-        
-        // Função para ler dados da planilha
-        function carregarDaPlanilha() {
-            closeSidebar();
-            atualizarStatus("Carregando da planilha...");
-            showLoading("Carregando...");
+        function init() {
+            // Inicializar mapa com visualização Satélite Híbrido
+            map = L.map('map').setView([-11.720739, -62.315405], 18);
             
-            fetch(READ_URL)
-                .then(response => response.text())
-                .then(text => {
-                    // Remove o prefixo do Google Viz
-                    const jsonText = text.replace(/^.*\(/, '').replace(/\);$/, '');
-                    const data = JSON.parse(jsonText);
-                    
-                    const rows = data.table.rows;
-                    const locationsTemp = [];
-                    
-                    for(let i = 1; i < rows.length; i++) {
-                        const row = rows[i].c;
-                        if(row[0] && row[0].v) {
-                            locationsTemp.push({
-                                id: row[0]?.v?.toString() || '',
-                                name: row[1]?.v || '',
-                                cpf: row[2]?.v || '',
-                                address: row[3]?.v || '',
-                                lat: row[4]?.v || '',
-                                lng: row[5]?.v || '',
-                                contact: row[6]?.v || '',
-                                note: row[7]?.v || '',
-                                groupId: row[8]?.v || '',
-                                photoData: row[9]?.v || '',
-                                date: row[10]?.v || new Date().toISOString()
-                            });
-                        }
-                    }
-                    
-                    if(locationsTemp.length > 0) {
-                        locations = locationsTemp;
-                        saveToLocalStorage();
-                        refreshAllMarkers();
-                        atualizarStatus(`✅ Carregado ${locations.length} registros`);
-                        alert(`✅ Carregado ${locations.length} registros da planilha!`);
-                    } else {
-                        atualizarStatus("✅ Conectado! Planilha vazia");
-                        alert("✅ Conexão OK! Planilha está vazia.");
-                    }
-                    hideLoading();
-                })
-                .catch(e => { 
-                    console.error("Erro:", e); 
-                    atualizarStatus(`❌ Erro: ${e.message}`, true);
-                    alert(`❌ Falha ao carregar: ${e.message}\n\nVerifique se a planilha está compartilhada publicamente.`);
-                    hideLoading(); 
-                });
+            // Camada Satélite Híbrido (Google Satélite com nomes de ruas)
+            L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                attribution: '&copy; Google',
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            }).addTo(map);
+            
+            // Evento de toque longo (3 segundos)
+            map.on('mousedown', startLongPress);
+            map.on('mouseup', cancelLongPress);
+            map.on('mouseleave', cancelLongPress);
+            
+            // Para dispositivos touch
+            map.on('touchstart', startLongPress);
+            map.on('touchend', cancelLongPress);
+            map.on('touchcancel', cancelLongPress);
+            
+            // Carregar marcadores existentes
+            loadCadastros();
+            
+            // Evento do botão buscar número
+            document.getElementById('buscarNumeroBtn').addEventListener('click', buscarNumeroPorLocalizacao);
         }
         
-        // Função para salvar usando Form Submit (evita CORS)
-        function salvarNaPlanilha(dados) {
-            return new Promise((resolve, reject) => {
-                // Cria um formulário invisível
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.target = '_blank';
-                form.action = `https://docs.google.com/forms/d/e/1FAIpQLSdummy/formResponse`;
-                
-                // Adiciona os campos
-                const campos = [
-                    { name: 'entry.1', value: dados.name },
-                    { name: 'entry.2', value: dados.cpf },
-                    { name: 'entry.3', value: dados.address },
-                    { name: 'entry.4', value: dados.lat },
-                    { name: 'entry.5', value: dados.lng },
-                    { name: 'entry.6', value: dados.contact },
-                    { name: 'entry.7', value: dados.note },
-                    { name: 'entry.8', value: dados.groupId },
-                    { name: 'entry.9', value: dados.photoData }
-                ];
-                
-                campos.forEach(campo => {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.name = campo.name;
-                    input.value = campo.value;
-                    form.appendChild(input);
+        function startLongPress(e) {
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                const latlng = e.latlng;
+                handleLongPress(latlng);
+            }, 3000);
+        }
+        
+        function cancelLongPress() {
+            clearTimeout(longPressTimer);
+        }
+        
+        async function handleLongPress(latlng) {
+            currentLatLng = latlng;
+            
+            // Obter endereço via reverse geocoding
+            currentAddress = await getAddress(latlng.lat, latlng.lng);
+            currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
+            
+            // Atualizar display do endereço
+            document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
+            document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
+            
+            // Limpar formulário
+            document.getElementById('nome').value = '';
+            document.getElementById('cpf').value = '';
+            document.getElementById('contato').value = '';
+            document.getElementById('numero').value = '';
+            document.getElementById('nota').value = '';
+            document.getElementById('grupo').value = 'DROGAS';
+            document.getElementById('imagem').value = '';
+            document.getElementById('preview').style.display = 'none';
+            
+            // Reset current editing
+            currentEditingId = null;
+            
+            // Tentar buscar número automaticamente
+            await buscarNumeroPorLocalizacao();
+            
+            // Abrir formulário
+            document.getElementById('formOverlay').style.display = 'flex';
+        }
+        
+        function removerNumeroDoEndereco(endereco) {
+            if (!endereco) return '';
+            // Remove números que parecem ser números de casa (simplificado)
+            let enderecoSemNumero = endereco.replace(/,\s*\d+\s*,/, ',');
+            enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+$/, '');
+            return enderecoSemNumero;
+        }
+        
+        async function getAddress(lat, lng) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`);
+                const data = await response.json();
+                if (data.display_name) {
+                    return data.display_name;
+                }
+                return `${lat}, ${lng}`;
+            } catch (error) {
+                console.error('Erro ao obter endereço:', error);
+                return `${lat}, ${lng}`;
+            }
+        }
+        
+        async function buscarNumeroPorLocalizacao() {
+            if (!currentLatLng) return;
+            
+            showToast('Buscando número da localização...');
+            
+            // Simulação de busca de número baseado nas coordenadas
+            // Aqui você pode integrar com sua base de dados de quadras/lotes
+            const numeroEncontrado = await simularBuscaNumero(currentLatLng.lat, currentLatLng.lng);
+            
+            if (numeroEncontrado) {
+                document.getElementById('numero').value = numeroEncontrado;
+                showToast(`Número encontrado: ${numeroEncontrado}`);
+            } else {
+                showToast('Número não encontrado. Por favor, informe manualmente.');
+            }
+        }
+        
+        async function simularBuscaNumero(lat, lng) {
+            // SIMULAÇÃO - Substitua por sua base de dados real
+            // Exemplo de como seria com dados reais:
+            // return await buscarEmBaseDeDados(lat, lng);
+            
+            // Simulação baseada nas coordenadas de Nova Brasilândia
+            const latHash = Math.floor(lat * 1000);
+            const lngHash = Math.floor(lng * 1000);
+            const numeroSimulado = (latHash + lngHash) % 100 + 1;
+            
+            // Exemplo de retorno formatado
+            return `Lote ${numeroSimulado}, Quadra ${Math.floor(numeroSimulado / 10) + 1}`;
+        }
+        
+        // Função para integrar com base de dados de quadras/lotes
+        // Você pode substituir a função acima por esta quando tiver os dados
+        async function buscarNumeroEmBaseDeDados(lat, lng) {
+            // Aqui você pode:
+            // 1. Consultar uma API local
+            // 2. Buscar em um JSON com as coordenadas das quadras
+            // 3. Usar um arquivo CSV com o mapeamento
+            
+            // Exemplo de consulta a um arquivo JSON local
+            try {
+                const response = await fetch('dados_quadras.json');
+                const dados = await response.json();
+                const quadra = dados.find(q => 
+                    Math.abs(q.lat - lat) < 0.0001 && 
+                    Math.abs(q.lng - lng) < 0.0001
+                );
+                if (quadra) {
+                    return `Quadra ${quadra.quadra}, Lote ${quadra.lote}`;
+                }
+            } catch (error) {
+                console.error('Erro ao buscar na base de dados:', error);
+            }
+            return null;
+        }
+        
+        // Upload de imagem para base64
+        document.getElementById('imagem').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('preview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Submissão do formulário
+        document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const numero = document.getElementById('numero').value;
+            
+            if (!nome) {
+                showToast('Por favor, preencha o Nome');
+                return;
+            }
+            
+            if (!numero) {
+                showToast('Por favor, informe o número da casa/lote');
+                return;
+            }
+            
+            // Montar endereço completo com número
+            const enderecoBase = document.getElementById('endereco').value;
+            const enderecoCompleto = `${enderecoBase}, ${numero}`;
+            
+            const formData = {
+                action: currentEditingId ? 'update' : 'add',
+                id: currentEditingId || Date.now().toString(),
+                nome: nome,
+                cpf: document.getElementById('cpf').value,
+                endereco: enderecoCompleto,
+                lat: currentLatLng.lat,
+                lng: currentLatLng.lng,
+                contato: document.getElementById('contato').value,
+                nota: document.getElementById('nota').value,
+                grupo: document.getElementById('grupo').value,
+                numero: numero,
+                imagem: document.getElementById('preview').src || '',
+                data: new Date().toISOString()
+            };
+            
+            showToast('Salvando...');
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
                 });
                 
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
+                showToast('Salvo com sucesso!');
+                closeForm();
+                loadCadastros();
                 
-                resolve({ status: "success" });
+                // Adicionar marcador no mapa com a cor correta
+                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
+                
+            } catch (error) {
+                console.error('Erro ao salvar:', error);
+                showToast('Erro ao salvar. Salvando localmente...');
+                
+                // Fallback: salvar localmente
+                let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
+                if (currentEditingId) {
+                    const index = localData.findIndex(c => c.id == currentEditingId);
+                    if (index !== -1) localData[index] = formData;
+                } else {
+                    localData.push(formData);
+                }
+                localStorage.setItem('cadastros_local', JSON.stringify(localData));
+                showToast('Salvo localmente!');
+                closeForm();
+                loadCadastros();
+                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo);
+            }
+        });
+        
+        function closeForm() {
+            document.getElementById('formOverlay').style.display = 'none';
+            currentLatLng = null;
+            currentEditingId = null;
+        }
+        
+        function addMarkerToMap(lat, lng, nome, grupo) {
+            // Definir cores conforme solicitado
+            const markerColor = getMarkerColor(grupo);
+            
+            // Criar ícone customizado com a cor correta
+            const markerHtml = L.divIcon({
+                html: `<div style="background-color: ${markerColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">
+                           <i class="fas fa-map-marker-alt" style="color: white; font-size: 14px;"></i>
+                       </div>`,
+                iconSize: [28, 28],
+                className: 'custom-marker',
+                popupAnchor: [0, -14]
+            });
+            
+            const marker = L.marker([lat, lng], { icon: markerHtml }).addTo(map);
+            
+            // Popup com informações
+            marker.bindPopup(`
+                <div style="min-width: 150px;">
+                    <b style="font-size: 14px;">${escapeHtml(nome)}</b><br>
+                    <span style="color: ${markerColor}; font-weight: bold;">● ${grupo}</span><br>
+                    <button onclick="verCadastroDetalhe('${nome}')" style="margin-top: 5px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Ver detalhes
+                    </button>
+                </div>
+            `);
+            
+            return marker;
+        }
+        
+        function getMarkerColor(grupo) {
+            // Cores conforme solicitação:
+            // DROGAS: Vermelho (#ff0000)
+            // HOMICÍDIO: Laranja (#ff6600)
+            // ROUBO/FURTO: Amarelo (#ffcc00)
+            // OUTRO: Cinza (#607d8b)
+            const cores = {
+                'DROGAS': '#ff0000',      // Vermelho
+                'HOMICÍDIO': '#ff6600',   // Laranja
+                'ROUBO': '#ffcc00',       // Amarelo
+                'OUTRO': '#607d8b'        // Cinza
+            };
+            return cores[grupo] || '#4CAF50';
+        }
+        
+        // Carregar cadastros da planilha
+        async function loadCadastros() {
+            showToast('Carregando cadastros...');
+            
+            try {
+                // Tentar carregar da planilha Google
+                const response = await fetch(`${SCRIPT_URL}?action=get`);
+                const data = await response.json();
+                if (data && data.cadastros) {
+                    allCadastros = data.cadastros;
+                    renderCadastrosList();
+                    
+                    // Limpar marcadores existentes e recriar
+                    map.eachLayer((layer) => {
+                        if (layer instanceof L.Marker && !(layer instanceof L.TileLayer)) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    
+                    allCadastros.forEach(cad => {
+                        if (cad.lat && cad.lng) {
+                            addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo);
+                        }
+                    });
+                } else {
+                    throw new Error('Sem dados');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar da planilha, usando localStorage:', error);
+                const localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
+                allCadastros = localData;
+                renderCadastrosList();
+                
+                allCadastros.forEach(cad => {
+                    if (cad.lat && cad.lng) {
+                        addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo);
+                    }
+                });
+            }
+        }
+        
+        function renderCadastrosList() {
+            const container = document.getElementById('cadastrosList');
+            if (!allCadastros.length) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum cadastro encontrado</div>';
+                return;
+            }
+            
+            container.innerHTML = allCadastros.map(cad => `
+                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')" style="border-left-color: ${getMarkerColor(cad.grupo)}">
+                    <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                    <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
+                    <p><i class="fas fa-calendar"></i> ${cad.data ? new Date(cad.data).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                    <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+                </div>
+            `).join('');
+        }
+        
+        function getIconForGrupo(grupo) {
+            const icons = {
+                'DROGAS': 'fa-capsules',
+                'ROUBO': 'fa-gavel',
+                'HOMICÍDIO': 'fa-skull',
+                'OUTRO': 'fa-tag'
+            };
+            return icons[grupo] || 'fa-map-marker';
+        }
+        
+        function selectCadastro(id) {
+            selectedCadastro = allCadastros.find(c => c.id == id);
+            if (selectedCadastro) {
+                document.getElementById('actionsFooter').classList.add('show');
+                showToast(`Selecionado: ${selectedCadastro.nome}`);
+                
+                // Centralizar mapa no local
+                if (selectedCadastro.lat && selectedCadastro.lng) {
+                    map.setView([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], 18);
+                    
+                    // Criar um efeito de pulsação no local
+                    const pulseIcon = L.divIcon({
+                        className: 'pulse-icon',
+                        html: '<div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(76, 175, 80, 0.5); animation: pulse 1s infinite;"></div>',
+                        iconSize: [40, 40]
+                    });
+                    
+                    const pulseMarker = L.marker([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], { icon: pulseIcon }).addTo(map);
+                    setTimeout(() => map.removeLayer(pulseMarker), 2000);
+                }
+            }
+        }
+        
+        function closeCadastrosPanel() {
+            document.getElementById('cadastrosPanel').classList.remove('open');
+            document.getElementById('actionsFooter').classList.remove('show');
+            isChangingAddressMode = false;
+            if (tempAddressMarker) {
+                map.removeLayer(tempAddressMarker);
+                tempAddressMarker = null;
+            }
+        }
+        
+        function openCadastrosPanel() {
+            document.getElementById('cadastrosPanel').classList.add('open');
+            loadCadastros();
+        }
+        
+        document.getElementById('fabCadastros').onclick = openCadastrosPanel;
+        
+        function filterCadastros() {
+            const searchTerm = document.getElementById('searchCadastros').value.toLowerCase();
+            const filtered = allCadastros.filter(cad => 
+                cad.nome.toLowerCase().includes(searchTerm) || 
+                (cad.endereco && cad.endereco.toLowerCase().includes(searchTerm))
+            );
+            
+            const container = document.getElementById('cadastrosList');
+            if (!filtered.length) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum resultado encontrado</div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(cad => `
+                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')" style="border-left-color: ${getMarkerColor(cad.grupo)}">
+                    <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                    <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
+                    <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
+                </div>
+            `).join('');
+        }
+        
+        function shareWhatsApp() {
+            if (!selectedCadastro) return;
+            const message = `📍 *Localização:* ${selectedCadastro.nome}\n📍 *Endereço:* ${selectedCadastro.endereco}\n🏷️ *Grupo:* ${selectedCadastro.grupo}\n📝 *Nota:* ${selectedCadastro.nota || 'N/A'}\n🗺️ *Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+        
+        function editCadastro() {
+            if (!selectedCadastro) return;
+            
+            // Extrair número do endereço
+            let numero = '';
+            let enderecoSemNumero = selectedCadastro.endereco || '';
+            const numeroMatch = enderecoSemNumero.match(/,([^,]*)$/);
+            if (numeroMatch) {
+                numero = numeroMatch[1].trim();
+                enderecoSemNumero = enderecoSemNumero.replace(/,([^,]*)$/, '');
+            }
+            
+            // Preencher formulário para edição
+            currentEditingId = selectedCadastro.id;
+            currentLatLng = { lat: parseFloat(selectedCadastro.lat), lng: parseFloat(selectedCadastro.lng) };
+            currentAddress = enderecoSemNumero;
+            
+            document.getElementById('nome').value = selectedCadastro.nome;
+            document.getElementById('cpf').value = selectedCadastro.cpf || '';
+            document.getElementById('contato').value = selectedCadastro.contato || '';
+            document.getElementById('enderecoDetectado').innerHTML = enderecoSemNumero;
+            document.getElementById('endereco').value = enderecoSemNumero;
+            document.getElementById('numero').value = numero;
+            document.getElementById('grupo').value = selectedCadastro.grupo;
+            document.getElementById('nota').value = selectedCadastro.nota || '';
+            
+            closeCadastrosPanel();
+            document.getElementById('formOverlay').style.display = 'flex';
+        }
+        
+        async function deleteCadastro() {
+            if (!selectedCadastro) return;
+            
+            if (!confirm(`Tem certeza que deseja excluir "${selectedCadastro.nome}"?`)) return;
+            
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
+                });
+                showToast('Excluído com sucesso!');
+                loadCadastros();
+                document.getElementById('actionsFooter').classList.remove('show');
+            } catch (error) {
+                // Fallback local
+                let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
+                localData = localData.filter(c => c.id != selectedCadastro.id);
+                localStorage.setItem('cadastros_local', JSON.stringify(localData));
+                showToast('Excluído localmente!');
+                loadCadastros();
+                document.getElementById('actionsFooter').classList.remove('show');
+            }
+        }
+        
+        function changeAddressMode() {
+            if (!selectedCadastro) return;
+            
+            isChangingAddressMode = true;
+            closeCadastrosPanel();
+            showToast('Clique no mapa para selecionar o novo endereço (toque normal)');
+            
+            // Adicionar evento temporário no mapa
+            map.once('click', async (e) => {
+                const newLatLng = e.latlng;
+                const newAddress = await getAddress(newLatLng.lat, newLatLng.lng);
+                const newAddressWithoutNumber = removerNumeroDoEndereco(newAddress);
+                
+                // Manter o mesmo número
+                const numeroAtual = selectedCadastro.numero || '';
+                const enderecoCompleto = `${newAddressWithoutNumber}, ${numeroAtual}`;
+                
+                // Atualizar cadastro
+                const updatedCadastro = {
+                    ...selectedCadastro,
+                    lat: newLatLng.lat,
+                    lng: newLatLng.lng,
+                    endereco: enderecoCompleto
+                };
+                
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'update', ...updatedCadastro })
+                    });
+                    showToast('Endereço atualizado!');
+                    loadCadastros();
+                } catch (error) {
+                    let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
+                    const index = localData.findIndex(c => c.id == selectedCadastro.id);
+                    if (index !== -1) localData[index] = updatedCadastro;
+                    localStorage.setItem('cadastros_local', JSON.stringify(localData));
+                    showToast('Endereço atualizado localmente!');
+                    loadCadastros();
+                }
+                
+                isChangingAddressMode = false;
             });
         }
         
-        function loadLocalFallback() { 
-            let saved = localStorage.getItem('salva_locais_data'); 
-            if(saved) { 
-                let data = JSON.parse(saved); 
-                locations = data.locations || []; 
-                if(data.groups) groups = data.groups; 
-                atualizarStatus(`📱 Local: ${locations.length} registros`);
-            } else {
-                atualizarStatus("📱 Modo local - sem dados");
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function verCadastroDetalhe(nome) {
+            const cad = allCadastros.find(c => c.nome === nome);
+            if (cad) selectCadastro(cad.id);
+        }
+        
+        // Adicionar animação de pulso no CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% {
+                    transform: scale(0.5);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(2);
+                    opacity: 0;
+                }
             }
-            updateGroupSelect(); 
-            refreshAllMarkers(); 
-        }
-        
-        function saveToLocalStorage() { localStorage.setItem('salva_locais_data', JSON.stringify({ locations, groups })); }
-        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('backdrop').style.display = 'none'; }
-        function toggleSidebar() { let s = document.getElementById('sidebar'), b = document.getElementById('backdrop'); if(s.classList.contains('open')) closeSidebar(); else { s.classList.add('open'); b.style.display = 'block'; } }
-        function showScreen(screen) { closeSidebar(); document.getElementById('screenSaveLocation').style.display = 'none'; document.getElementById('screenSavedList').style.display = 'none'; if(screen === 'save') { document.getElementById('screenSaveLocation').style.display = 'flex'; document.getElementById('pageTitle').innerText = editingLocationId ? "Editar" : "Salvar"; } else if(screen === 'list') { document.getElementById('screenSavedList').style.display = 'flex'; document.getElementById('pageTitle').innerText = "Locais"; renderSavedList(); } else { document.getElementById('pageTitle').innerText = "Salva-Locais"; setTimeout(() => map.invalidateSize(), 200); } }
-        function showSavedLocationsScreen() { showScreen('list'); }
-        function closeFormAndShowMap() { showScreen('map'); }
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function changeMapLayer(type) { if(currentMapLayer === 'street') map.removeLayer(streetLayer); else map.removeLayer(hybridGroup); type === 'street' ? streetLayer.addTo(map) : hybridGroup.addTo(map); currentMapLayer = type; closeModal('modalMapType'); }
-        function getGroupColor(gid) { let g = groups.find(g => g.id === gid); return g ? g.color : "#0081c9"; }
-        function createCustomIcon(color) { return L.divIcon({ html: `<div style="background-color:${color}; width:34px; height:34px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-location-dot" style="transform:rotate(45deg); color:white; font-size:14px;"></i></div>`, iconSize: [34,34], iconAnchor: [17,34], popupAnchor: [0,-30] }); }
-        function refreshAllMarkers() { Object.values(markers).forEach(m => map.removeLayer(m)); markers = {}; locations.forEach(loc => { let m = L.marker([loc.lat, loc.lng], { icon: createCustomIcon(getGroupColor(loc.groupId)) }).addTo(map); m.bindPopup(`<div><strong>📍 ${loc.name}</strong><br>${loc.address ? loc.address.substring(0,45) : ''}<br><button onclick="window.editLocationById('${loc.id}')" style="background:#0081c9; color:white; border:none; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer;">Ver/Editar</button></div>`); markers[loc.id] = m; }); }
-        window.editLocationById = (id) => editLocation(id);
-        
-        let longPressTimer = null;
-        document.getElementById('map').addEventListener('touchstart', (e) => { let touch = e.touches[0]; longPressTimer = setTimeout(() => { let point = map.containerPointToLatLng([touch.clientX, touch.clientY]); openFormAtCoords(point.lat, point.lng); }, 600); });
-        document.getElementById('map').addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
-        
-        function openFormAtCoords(lat, lng) { editingLocationId = null; currentSelectedCoords = { lat, lng }; currentPhotoData = null; updateGroupSelect(); document.getElementById('txtLat').innerText = lat.toFixed(6); document.getElementById('txtLng').innerText = lng.toFixed(6); document.getElementById('locName').value = ''; document.getElementById('locCpf').value = ''; document.getElementById('locAddress').value = ''; document.getElementById('locContact').value = ''; document.getElementById('locNote').value = ''; document.getElementById('selectedPhoto').style.display = 'none'; document.getElementById('photoPlaceholder').style.display = 'flex'; document.getElementById('deleteLocationBtn').style.display = 'none'; showScreen('save'); }
-        
-        function triggerPhotoUpload() { document.getElementById('photoInput').click(); }
-        function compressImage(file, maxSizeKB=100) { return new Promise((resolve) => { let reader = new FileReader(); reader.onload = (e) => { let img = new Image(); img.onload = () => { let w=img.width, h=img.height, max=300; if(w>h && w>max) { h = (h*max)/w; w=max; } else if(h>max) { w = (w*max)/h; h=max; } let canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); let result = canvas.toDataURL('image/jpeg', 0.6); resolve(result); }; img.src = e.target.result; }; reader.readAsDataURL(file); }); }
-        async function handlePhotoSelect(event) { let file = event.target.files[0]; if(file) { showLoading("Comprimindo..."); try { currentPhotoData = await compressImage(file, 100); document.getElementById('selectedPhoto').src = currentPhotoData; document.getElementById('selectedPhoto').style.display = 'block'; document.getElementById('photoPlaceholder').style.display = 'none'; atualizarStatus("Foto carregada"); } catch(e) { alert("Erro na imagem"); } finally { hideLoading(); } } }
-        
-        function getActualLocation() { closeSidebar(); navigator.geolocation.getCurrentPosition(p => map.setView([p.coords.latitude, p.coords.longitude], 18), () => alert("Erro GPS")); }
-        function updateGroupSelect() { let select = document.getElementById('locGroupSelect'); if(select) { select.innerHTML = ''; groups.forEach(g => { let opt = document.createElement('option'); opt.value = g.id; opt.innerText = g.name; select.appendChild(opt); }); } }
-        function openNewGroupModal() { closeSidebar(); openModal('modalNewGroup'); }
-        function createNewGroup() { let name = document.getElementById('newGroupName').value.trim(); let color = document.getElementById('newGroupColor').value; if(!name) return; let id = name.toUpperCase().replace(/\s+/g, '_'); if(groups.some(g=>g.id===id)) { alert("Grupo existe"); return; } groups.push({id,name,color}); updateGroupSelect(); saveToLocalStorage(); closeModal('modalNewGroup'); }
-        
-        async function saveLocationData() {
-            let name = document.getElementById('locName').value.trim();
-            if(!name) { alert("Nome obrigatório"); return; }
-            let btn = document.getElementById('saveLocationBtn');
-            btn.disabled = true; btn.innerText = "Gravando...";
-            showLoading("Salvando...");
-            
-            let id = editingLocationId || Date.now().toString();
-            let lat = currentSelectedCoords ? currentSelectedCoords.lat : initialCoords[0];
-            let lng = currentSelectedCoords ? currentSelectedCoords.lng : initialCoords[1];
-            let data = { 
-                id: id, 
-                name: name, 
-                cpf: document.getElementById('locCpf').value.trim(), 
-                address: document.getElementById('locAddress').value.trim(), 
-                lat: lat, 
-                lng: lng, 
-                contact: document.getElementById('locContact').value.trim(), 
-                note: document.getElementById('locNote').value.trim(), 
-                groupId: document.getElementById('locGroupSelect').value, 
-                photoData: currentPhotoData || "", 
-                date: new Date().toISOString() 
-            };
-            
-            // Salva localmente
-            if(editingLocationId) { 
-                let idx = locations.findIndex(l=>l.id===editingLocationId); 
-                if(idx!==-1) locations[idx]=data; 
-            } else { 
-                locations.push(data); 
+            .pulse-icon {
+                animation: pulse 1s infinite;
             }
-            saveToLocalStorage(); 
-            refreshAllMarkers();
-            
-            atualizarStatus("✅ Salvo localmente!");
-            alert(`✅ Local "${name}" salvo com sucesso!\n\nOs dados foram salvos no seu dispositivo.`);
-            
-            hideLoading();
-            btn.disabled = false; 
-            btn.innerText = "Salvar"; 
-            closeFormAndShowMap();
-            
-            // Tenta sincronizar com a planilha (opcional)
-            try {
-                await salvarNaPlanilha(data);
-                atualizarStatus("✅ Sincronizado com planilha!");
-            } catch(e) {
-                console.log("Não foi possível sincronizar agora");
-            }
-        }
+        `;
+        document.head.appendChild(style);
         
-        function editLocation(id) { 
-            let loc = locations.find(l=>l.id===id.toString()); 
-            if(!loc) return; 
-            editingLocationId = loc.id; 
-            currentSelectedCoords = { lat: parseFloat(loc.lat), lng: parseFloat(loc.lng) }; 
-            currentPhotoData = loc.photoData || null; 
-            updateGroupSelect(); 
-            document.getElementById('locGroupSelect').value = loc.groupId; 
-            document.getElementById('txtLat').innerText = currentSelectedCoords.lat.toFixed(6); 
-            document.getElementById('txtLng').innerText = currentSelectedCoords.lng.toFixed(6); 
-            document.getElementById('locName').value = loc.name; 
-            document.getElementById('locCpf').value = loc.cpf || ''; 
-            document.getElementById('locAddress').value = loc.address || ''; 
-            document.getElementById('locContact').value = loc.contact || ''; 
-            document.getElementById('locNote').value = loc.note || ''; 
-            if(currentPhotoData && currentPhotoData.startsWith('data:image')) { 
-                document.getElementById('selectedPhoto').src = currentPhotoData; 
-                document.getElementById('selectedPhoto').style.display = 'block'; 
-                document.getElementById('photoPlaceholder').style.display = 'none'; 
-            } else { 
-                document.getElementById('selectedPhoto').style.display = 'none'; 
-                document.getElementById('photoPlaceholder').style.display = 'flex'; 
-            } 
-            document.getElementById('deleteLocationBtn').style.display = 'block'; 
-            showScreen('save'); 
-        }
-        
-        function deleteCurrentLocation() { 
-            if(!editingLocationId) return; 
-            if(!confirm("Excluir este registro?")) return; 
-            let id = editingLocationId; 
-            locations = locations.filter(l=>l.id!==id); 
-            saveToLocalStorage(); 
-            refreshAllMarkers(); 
-            closeFormAndShowMap(); 
-            alert("✅ Registro excluído localmente!");
-        }
-        
-        function renderSavedList() { 
-            let container = document.getElementById('savedListContainer'); 
-            let search = document.getElementById('searchBar').value.toLowerCase(); 
-            container.innerHTML = ''; 
-            let filtered = locations.filter(l => l.name.toLowerCase().includes(search) || (l.address||'').toLowerCase().includes(search) || l.groupId.toLowerCase().includes(search)); 
-            if(currentSortOrder === 'alpha') filtered.sort((a,b)=>a.name.localeCompare(b.name)); 
-            else if(currentSortOrder === 'date-asc') filtered.sort((a,b)=>new Date(a.date||0)-new Date(b.date||0)); 
-            else filtered.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)); 
-            if(filtered.length===0) { container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>Nenhum local salvo</p><p style="font-size:12px; margin-top:10px;">Toque e segure no mapa para adicionar</p></div>'; return; } 
-            filtered.forEach(loc => { 
-                let div = document.createElement('div'); 
-                div.className = 'location-card'; 
-                let img = (loc.photoData && loc.photoData.startsWith('data:image')) ? `<img src="${loc.photoData}" class="card-thumb">` : `<div class="card-thumb" style="display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-image" style="font-size:24px; color:#adb5bd;"></i></div>`; 
-                div.innerHTML = `<div class="card-header-row">${img}<div class="card-info"><h4 style="font-size:14px;">${loc.name}</h4><p style="font-size:11px;"><i class="fa-solid fa-tag"></i> ${loc.groupId}</p><p style="font-size:11px;"><i class="fa-solid fa-map-pin"></i> ${parseFloat(loc.lat).toFixed(5)}</p>${loc.address ? `<p style="font-size:10px; color:#666;">${loc.address.substring(0,60)}</p>` : ''}</div></div><div class="card-actions"><button class="card-action-btn btn-act-send" onclick="abrirModalWhatsApp('${loc.id}')"><i class="fa-brands fa-whatsapp"></i> Compartilhar</button><button class="card-action-btn btn-act-edit" onclick="editLocation('${loc.id}')"><i class="fa-solid fa-pen"></i> Editar</button><button class="card-action-btn btn-act-del" onclick="deletarDiretoDaLista('${loc.id}')"><i class="fa-solid fa-trash"></i> Excluir</button></div>`; 
-                container.appendChild(div); 
-            }); 
-        }
-        
-        function openSortModal() { openModal('modalSort'); }
-        function setSortOrder(order) { currentSortOrder = order; closeModal('modalSort'); renderSavedList(); }
-        function deletarDiretoDaLista(id) { editingLocationId = id; deleteCurrentLocation(); renderSavedList(); }
-        function abrirModalWhatsApp(id) { locationIdParaEnvio = id; openModal('modalSendWhatsApp'); }
-        function processarEnvioWhatsApp(tipo) { let loc = locations.find(l=>l.id===locationIdParaEnvio.toString()); if(!loc) return; closeModal('modalSendWhatsApp'); let texto = `*📍 LOCALIZAÇÃO OPERACIONAL*\n\n*Nome:* ${loc.name}\n*Grupo:* ${loc.groupId}\n*Endereço:* ${loc.address || 'N/I'}\n*Coordenadas:* ${loc.lat}, ${loc.lng}\n*Link:* https://maps.google.com/?q=${loc.lat},${loc.lng}`; let url = tipo==='web' ? `https://web.whatsapp.com/send?text=${encodeURIComponent(texto)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`; window.open(url, '_blank'); }
-        
-        document.getElementById('menuBtn').addEventListener('click', toggleSidebar);
-        document.getElementById('mapTypeBtn').addEventListener('click', () => openModal('modalMapType'));
-        setTimeout(() => { let t = document.getElementById('longPressToast'); if(t) { t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 4000); } }, 1000);
-        
-        loadLocalFallback();
-        carregarDaPlanilha();
+        window.verCadastroDetalhe = verCadastroDetalhe;
+        window.selectCadastro = selectCadastro;
+        window.closeCadastrosPanel = closeCadastrosPanel;
+        window.filterCadastros = filterCadastros;
+        window.shareWhatsApp = shareWhatsApp;
+        window.editCadastro = editCadastro;
+        window.deleteCadastro = deleteCadastro;
+        window.changeAddressMode = changeAddressMode;
+        window.closeForm = closeForm;
     </script>
 </body>
 </html>
