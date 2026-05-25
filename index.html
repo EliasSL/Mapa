@@ -132,7 +132,7 @@
         const READ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
         
         // URL para escrever dados (form submit)
-        const WRITE_URL = `https://docs.google.com/forms/d/e/1FAIpQLSdummy/viewform`; // Vamos usar método alternativo
+        const WRITE_URL = `https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec`; // Vamos usar método alternativo
         
         let locations = [], groups = [{ id:"DROGAS", name:"DROGAS", color:"#e74c3c" }, { id:"ROUBO", name:"ROUBO", color:"#f39c12" }, { id:"HOMICIDIO", name:"HOMICÍDIO", color:"#8e44ad" }];
         let currentSortOrder = 'date-desc', editingLocationId = null, currentSelectedCoords = null, currentPhotoData = null, markers = {}, currentMapLayer = 'street', locationIdParaEnvio = null;
