@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Salva-Locais</title>
+    <title>Salva-Locais - Versão Final</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -83,8 +83,7 @@
                 <li class="sidebar-item" onclick="getActualLocation()"><div class="sidebar-item-left"><i class="fa-solid fa-location-arrow"></i> <span>Minha Localização</span></div><i class="fa-solid fa-chevron-right"></i></li>
                 <li class="sidebar-item" onclick="showSavedLocationsScreen()"><div class="sidebar-item-left"><i class="fa-solid fa-list-ul"></i> <span>Locais Salvos</span></div><i class="fa-solid fa-chevron-right"></i></li>
                 <li class="sidebar-item" onclick="openNewGroupModal()"><div class="sidebar-item-left"><i class="fa-solid fa-plus-circle"></i> <span>Novo Grupo</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="carregarDaPlanilha()"><div class="sidebar-item-left"><i class="fa-solid fa-sync"></i> <span>Sincronizar</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="testarConexao()"><div class="sidebar-item-left"><i class="fa-solid fa-plug"></i> <span>Testar Conexão</span></div><i class="fa-solid fa-chevron-right"></i></li>
+                <li class="sidebar-item" onclick="enviarDadosPendentes()"><div class="sidebar-item-left"><i class="fa-solid fa-cloud-upload-alt"></i> <span>Enviar Pendentes</span></div><i class="fa-solid fa-chevron-right"></i></li>
             </ul>
         </div>
         <div class="screen-overlay" id="screenSaveLocation">
@@ -125,11 +124,12 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // SUA URL DO WEB APP - COLE AQUI
-        const CONFIG_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec";
+        // URL DO WEB APP
+        const CONFIG_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8xFkTi44Z3hMD4Xhe38RlvX6tq8bMhd5nS6zW_xKHuRKDefO6umLuhSeQh9yuzCpk/exec";
         
         let locations = [], groups = [{ id:"DROGAS", name:"DROGAS", color:"#e74c3c" }, { id:"ROUBO", name:"ROUBO", color:"#f39c12" }, { id:"HOMICIDIO", name:"HOMICÍDIO", color:"#8e44ad" }];
         let currentSortOrder = 'date-desc', editingLocationId = null, currentSelectedCoords = null, currentPhotoData = null, markers = {}, currentMapLayer = 'street', locationIdParaEnvio = null;
+        let dadosPendentes = JSON.parse(localStorage.getItem('dados_pendentes') || '[]');
         const initialCoords = [-11.722502, -62.327864];
         let map = L.map('map', { zoomControl: false }).setView(initialCoords, 16);
         L.control.zoom({ position: 'topright' }).addTo(map);
@@ -147,30 +147,52 @@
         function showLoading(msg) { let l = document.getElementById('loadingIndicator'); l.querySelector('span').innerText = msg; l.style.display = 'flex'; atualizarStatus(msg); }
         function hideLoading() { document.getElementById('loadingIndicator').style.display = 'none'; }
         
-        function testarConexao() {
-            closeSidebar();
-            atualizarStatus("Testando conexão...");
-            showLoading("Testando...");
+        function salvarPendente(data) {
+            dadosPendentes.push(data);
+            localStorage.setItem('dados_pendentes', JSON.stringify(dadosPendentes));
+            atualizarStatus(`📋 ${dadosPendentes.length} registro(s) pendente(s)`, true);
+        }
+        
+        function enviarDadosPendentes() {
+            if(dadosPendentes.length === 0) {
+                alert("Nenhum dado pendente para enviar.");
+                return;
+            }
             
-            fetch(CONFIG_SCRIPT_URL)
-                .then(response => {
+            showLoading(`Enviando ${dadosPendentes.length} registro(s)...`);
+            let enviados = 0;
+            let falhas = 0;
+            
+            dadosPendentes.forEach(async (data, index) => {
+                try {
+                    const response = await fetch(CONFIG_SCRIPT_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ action: "save", data: data })
+                    });
+                    
                     if(response.ok) {
-                        atualizarStatus("✅ Conexão OK!");
-                        alert("✅ Conexão com Google Sheets funcionando!");
+                        enviados++;
                     } else {
-                        throw new Error(`HTTP ${response.status}`);
+                        falhas++;
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Dados recebidos:", data);
+                } catch(e) {
+                    falhas++;
+                }
+                
+                if(index === dadosPendentes.length - 1) {
+                    if(enviados > 0) {
+                        dadosPendentes = [];
+                        localStorage.setItem('dados_pendentes', JSON.stringify([]));
+                        atualizarStatus(`✅ ${enviados} enviados, ${falhas} falhas`);
+                        alert(`✅ ${enviados} registros sincronizados!\n${falhas > 0 ? `⚠️ ${falhas} falhas` : ''}`);
+                    } else {
+                        alert(`❌ Falha ao enviar. Tente novamente mais tarde.`);
+                    }
                     hideLoading();
-                })
-                .catch(error => {
-                    atualizarStatus(`❌ Erro: ${error.message}`, true);
-                    alert(`❌ Falha na conexão!\n\nErro: ${error.message}\n\nVerifique se o Web App está publicado como "Qualquer pessoa".`);
-                    hideLoading();
-                });
+                    carregarDaPlanilha();
+                }
+            });
         }
         
         function carregarDaPlanilha() {
@@ -201,7 +223,7 @@
                 .catch(e => { 
                     console.error("Erro:", e); 
                     atualizarStatus(`❌ Erro: ${e.message}`, true);
-                    alert(`❌ Falha ao carregar: ${e.message}`);
+                    alert(`❌ Falha ao carregar: ${e.message}\n\nVerifique sua conexão com a internet.`);
                     hideLoading(); 
                 });
         }
@@ -290,27 +312,13 @@
                 
                 const response = await fetch(CONFIG_SCRIPT_URL, { 
                     method: 'POST', 
-                    mode: 'cors',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }, 
+                    headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ action: "save", data: data })
                 });
                 
-                console.log("Response status:", response.status);
+                if(!response.ok) throw new Error(`HTTP ${response.status}`);
                 
-                if(!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                
-                const text = await response.text();
-                console.log("Resposta bruta:", text);
-                
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch(e) {
-                    throw new Error("Resposta inválida do servidor: " + text.substring(0, 100));
-                }
+                const json = await response.json();
                 
                 if(json.status === "success") {
                     atualizarStatus("✅ Sincronizado com Google!");
@@ -320,8 +328,9 @@
                 }
             } catch(err) {
                 console.error("Erro sync:", err);
-                atualizarStatus(`⚠️ Erro: ${err.message} - salvo localmente`, true);
-                alert(`⚠️ Erro ao sincronizar: ${err.message}\n\nDados salvos localmente.\n\nClique em "Sincronizar" no menu depois para enviar.`);
+                salvarPendente(data);
+                atualizarStatus(`⚠️ Salvo localmente (pendente: ${dadosPendentes.length})`, true);
+                alert(`⚠️ Sem conexão. Dados salvos localmente.\n\n📋 ${dadosPendentes.length} registro(s) aguardando envio.\n\nClique em "Enviar Pendentes" no menu quando tiver internet.`);
             } finally {
                 hideLoading();
                 btn.disabled = false; 
@@ -403,11 +412,11 @@
         setTimeout(() => { let t = document.getElementById('longPressToast'); if(t) { t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 4000); } }, 1000);
         
         loadLocalFallback();
+        carregarDaPlanilha();
         
-        // Testa conexão ao iniciar
-        setTimeout(() => {
-            testarConexao();
-        }, 2000);
+        if(dadosPendentes.length > 0) {
+            atualizarStatus(`📋 ${dadosPendentes.length} registro(s) pendente(s)`, true);
+        }
     </script>
 </body>
 </html>
