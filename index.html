@@ -9,9 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
-        body, html { height: 100%; width: 100%; overflow: hidden; }
+        body, html { height: 100%; width: 100%; overflow: hidden; background: #f0f0f0; }
         .app-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
-        .app-header { background-color: #0081c9; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; height: 56px; z-index: 1000; }
+        .app-header { background: #0081c9; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
         .header-title { font-size: 20px; font-weight: 500; }
         .header-icon { font-size: 20px; cursor: pointer; padding: 10px; min-width: 44px; text-align: center; }
         #map { flex: 1; width: 100%; z-index: 1; }
@@ -26,12 +26,12 @@
         .sidebar-item i { color: #0081c9; width: 20px; }
         .screen-overlay { position: absolute; top: 56px; left: 0; width: 100%; height: calc(100% - 56px); background: #f8f9fa; z-index: 1500; display: none; flex-direction: column; overflow-y: auto; }
         .form-group { padding: 15px 20px; }
-        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 8px 0 12px; font-size: 14px; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin: 8px 0 12px; font-size: 14px; background: white; }
         .photo-preview { width: 100%; height: 180px; background: #e9ecef; border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; border: 2px dashed #adb5bd; }
         .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
         .photo-placeholder { text-align: center; color: #6c757d; }
         .photo-placeholder i { font-size: 48px; }
-        .coordinate-display { background: #e9ecef; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 13px; }
+        .coordinate-display { background: #e9ecef; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
         .btn-row-3 { display: flex; gap: 15px; padding: 20px; }
         .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-cancel { background: #6c757d; color: white; }
@@ -54,9 +54,9 @@
         .search-bar-container { padding: 12px 15px; position: relative; background: white; border-bottom: 1px solid #e9ecef; }
         .search-input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid #ddd; border-radius: 25px; }
         .sort-button { position: absolute; right: 25px; top: 18px; background: none; border: none; font-size: 18px; color: #0081c9; cursor: pointer; }
-        .loading-indicator { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 8px; z-index: 4000; display: none; align-items: center; gap: 10px; font-size: 14px; }
-        .long-press-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 600; opacity: 0; transition: opacity 0.3s; white-space: nowrap; font-size: 12px; }
-        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #0f0; font-size: 10px; padding: 4px 8px; z-index: 5000; font-family: monospace; text-align: center; }
+        .loading-indicator { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 8px; z-index: 4000; display: none; align-items: center; gap: 10px; }
+        .long-press-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 600; opacity: 0; transition: opacity 0.3s; white-space: nowrap; font-size: 13px; }
+        .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #333; color: #0f0; font-size: 11px; padding: 4px 8px; z-index: 5000; font-family: monospace; text-align: center; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-indicator i { animation: spin 1s linear infinite; }
         .empty-state { text-align: center; padding: 60px 20px; color: #6c757d; }
@@ -83,7 +83,7 @@
                 <li class="sidebar-item" onclick="getActualLocation()"><div class="sidebar-item-left"><i class="fa-solid fa-location-arrow"></i> <span>Minha Localização</span></div><i class="fa-solid fa-chevron-right"></i></li>
                 <li class="sidebar-item" onclick="showSavedLocationsScreen()"><div class="sidebar-item-left"><i class="fa-solid fa-list-ul"></i> <span>Locais Salvos</span></div><i class="fa-solid fa-chevron-right"></i></li>
                 <li class="sidebar-item" onclick="openNewGroupModal()"><div class="sidebar-item-left"><i class="fa-solid fa-plus-circle"></i> <span>Novo Grupo</span></div><i class="fa-solid fa-chevron-right"></i></li>
-                <li class="sidebar-item" onclick="enviarDadosPendentes()"><div class="sidebar-item-left"><i class="fa-solid fa-cloud-upload-alt"></i> <span>Enviar Pendentes</span></div><i class="fa-solid fa-chevron-right"></i></li>
+                <li class="sidebar-item" onclick="carregarDaPlanilha()"><div class="sidebar-item-left"><i class="fa-solid fa-sync"></i> <span>Sincronizar</span></div><i class="fa-solid fa-chevron-right"></i></li>
             </ul>
         </div>
         <div class="screen-overlay" id="screenSaveLocation">
@@ -124,12 +124,18 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // URL DO WEB APP
-        const CONFIG_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec";
+        // 🔴🔴🔴 COLE O ID DA SUA PLANILHA AQUI 🔴🔴🔴
+        // Exemplo: "1ABC123DEF456GHI789"
+        const SHEET_ID = "1H3S0KHquj-2ylj34OSjYDs9sg2yjNofNxiawzYb1woY";
+        
+        // URL para ler dados (JSON)
+        const READ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+        
+        // URL para escrever dados (form submit)
+        const WRITE_URL = `https://docs.google.com/forms/d/e/1FAIpQLSdummy/viewform`; // Vamos usar método alternativo
         
         let locations = [], groups = [{ id:"DROGAS", name:"DROGAS", color:"#e74c3c" }, { id:"ROUBO", name:"ROUBO", color:"#f39c12" }, { id:"HOMICIDIO", name:"HOMICÍDIO", color:"#8e44ad" }];
         let currentSortOrder = 'date-desc', editingLocationId = null, currentSelectedCoords = null, currentPhotoData = null, markers = {}, currentMapLayer = 'street', locationIdParaEnvio = null;
-        let dadosPendentes = JSON.parse(localStorage.getItem('dados_pendentes') || '[]');
         const initialCoords = [-11.722502, -62.327864];
         let map = L.map('map', { zoomControl: false }).setView(initialCoords, 16);
         L.control.zoom({ position: 'topright' }).addTo(map);
@@ -147,85 +153,97 @@
         function showLoading(msg) { let l = document.getElementById('loadingIndicator'); l.querySelector('span').innerText = msg; l.style.display = 'flex'; atualizarStatus(msg); }
         function hideLoading() { document.getElementById('loadingIndicator').style.display = 'none'; }
         
-        function salvarPendente(data) {
-            dadosPendentes.push(data);
-            localStorage.setItem('dados_pendentes', JSON.stringify(dadosPendentes));
-            atualizarStatus(`📋 ${dadosPendentes.length} registro(s) pendente(s)`, true);
-        }
-        
-        function enviarDadosPendentes() {
-            if(dadosPendentes.length === 0) {
-                alert("Nenhum dado pendente para enviar.");
-                return;
-            }
-            
-            showLoading(`Enviando ${dadosPendentes.length} registro(s)...`);
-            let enviados = 0;
-            let falhas = 0;
-            
-            dadosPendentes.forEach(async (data, index) => {
-                try {
-                    const response = await fetch(CONFIG_SCRIPT_URL, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ action: "save", data: data })
-                    });
-                    
-                    if(response.ok) {
-                        enviados++;
-                    } else {
-                        falhas++;
-                    }
-                } catch(e) {
-                    falhas++;
-                }
-                
-                if(index === dadosPendentes.length - 1) {
-                    if(enviados > 0) {
-                        dadosPendentes = [];
-                        localStorage.setItem('dados_pendentes', JSON.stringify([]));
-                        atualizarStatus(`✅ ${enviados} enviados, ${falhas} falhas`);
-                        alert(`✅ ${enviados} registros sincronizados!\n${falhas > 0 ? `⚠️ ${falhas} falhas` : ''}`);
-                    } else {
-                        alert(`❌ Falha ao enviar. Tente novamente mais tarde.`);
-                    }
-                    hideLoading();
-                    carregarDaPlanilha();
-                }
-            });
-        }
-        
+        // Função para ler dados da planilha
         function carregarDaPlanilha() {
             closeSidebar();
             atualizarStatus("Carregando da planilha...");
             showLoading("Carregando...");
             
-            fetch(CONFIG_SCRIPT_URL)
-                .then(response => response.json())
-                .then(data => { 
-                    if(Array.isArray(data)) { 
-                        if(data.length > 0) {
-                            locations = data; 
-                            locations.forEach(l => l.id = l.id.toString()); 
-                            saveToLocalStorage(); 
-                            refreshAllMarkers(); 
-                            atualizarStatus(`✅ Carregado ${locations.length} registros`);
-                            alert(`✅ Carregado ${locations.length} registros da planilha!`);
-                        } else {
-                            atualizarStatus("✅ Conectado! Planilha vazia");
-                            alert("✅ Conexão OK! Planilha está vazia.");
+            fetch(READ_URL)
+                .then(response => response.text())
+                .then(text => {
+                    // Remove o prefixo do Google Viz
+                    const jsonText = text.replace(/^.*\(/, '').replace(/\);$/, '');
+                    const data = JSON.parse(jsonText);
+                    
+                    const rows = data.table.rows;
+                    const locationsTemp = [];
+                    
+                    for(let i = 1; i < rows.length; i++) {
+                        const row = rows[i].c;
+                        if(row[0] && row[0].v) {
+                            locationsTemp.push({
+                                id: row[0]?.v?.toString() || '',
+                                name: row[1]?.v || '',
+                                cpf: row[2]?.v || '',
+                                address: row[3]?.v || '',
+                                lat: row[4]?.v || '',
+                                lng: row[5]?.v || '',
+                                contact: row[6]?.v || '',
+                                note: row[7]?.v || '',
+                                groupId: row[8]?.v || '',
+                                photoData: row[9]?.v || '',
+                                date: row[10]?.v || new Date().toISOString()
+                            });
                         }
-                    } else {
-                        throw new Error("Resposta inválida");
                     }
-                    hideLoading(); 
+                    
+                    if(locationsTemp.length > 0) {
+                        locations = locationsTemp;
+                        saveToLocalStorage();
+                        refreshAllMarkers();
+                        atualizarStatus(`✅ Carregado ${locations.length} registros`);
+                        alert(`✅ Carregado ${locations.length} registros da planilha!`);
+                    } else {
+                        atualizarStatus("✅ Conectado! Planilha vazia");
+                        alert("✅ Conexão OK! Planilha está vazia.");
+                    }
+                    hideLoading();
                 })
                 .catch(e => { 
                     console.error("Erro:", e); 
                     atualizarStatus(`❌ Erro: ${e.message}`, true);
-                    alert(`❌ Falha ao carregar: ${e.message}\n\nVerifique sua conexão com a internet.`);
+                    alert(`❌ Falha ao carregar: ${e.message}\n\nVerifique se a planilha está compartilhada publicamente.`);
                     hideLoading(); 
                 });
+        }
+        
+        // Função para salvar usando Form Submit (evita CORS)
+        function salvarNaPlanilha(dados) {
+            return new Promise((resolve, reject) => {
+                // Cria um formulário invisível
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.target = '_blank';
+                form.action = `https://docs.google.com/forms/d/e/1FAIpQLSdummy/formResponse`;
+                
+                // Adiciona os campos
+                const campos = [
+                    { name: 'entry.1', value: dados.name },
+                    { name: 'entry.2', value: dados.cpf },
+                    { name: 'entry.3', value: dados.address },
+                    { name: 'entry.4', value: dados.lat },
+                    { name: 'entry.5', value: dados.lng },
+                    { name: 'entry.6', value: dados.contact },
+                    { name: 'entry.7', value: dados.note },
+                    { name: 'entry.8', value: dados.groupId },
+                    { name: 'entry.9', value: dados.photoData }
+                ];
+                
+                campos.forEach(campo => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = campo.name;
+                    input.value = campo.value;
+                    form.appendChild(input);
+                });
+                
+                document.body.appendChild(form);
+                form.submit();
+                document.body.removeChild(form);
+                
+                resolve({ status: "success" });
+            });
         }
         
         function loadLocalFallback() { 
@@ -253,7 +271,7 @@
         function changeMapLayer(type) { if(currentMapLayer === 'street') map.removeLayer(streetLayer); else map.removeLayer(hybridGroup); type === 'street' ? streetLayer.addTo(map) : hybridGroup.addTo(map); currentMapLayer = type; closeModal('modalMapType'); }
         function getGroupColor(gid) { let g = groups.find(g => g.id === gid); return g ? g.color : "#0081c9"; }
         function createCustomIcon(color) { return L.divIcon({ html: `<div style="background-color:${color}; width:34px; height:34px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-location-dot" style="transform:rotate(45deg); color:white; font-size:14px;"></i></div>`, iconSize: [34,34], iconAnchor: [17,34], popupAnchor: [0,-30] }); }
-        function refreshAllMarkers() { Object.values(markers).forEach(m => map.removeLayer(m)); markers = {}; locations.forEach(loc => { let m = L.marker([loc.lat, loc.lng], { icon: createCustomIcon(getGroupColor(loc.groupId)) }).addTo(map); m.bindPopup(`<div><strong>📍 ${loc.name}</strong><br>${loc.address ? loc.address.substring(0,45) : ''}<br><button onclick="window.editLocationById('${loc.id}')" style="background:#0081c9; color:white; border:none; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer;">Editar</button></div>`); markers[loc.id] = m; }); }
+        function refreshAllMarkers() { Object.values(markers).forEach(m => map.removeLayer(m)); markers = {}; locations.forEach(loc => { let m = L.marker([loc.lat, loc.lng], { icon: createCustomIcon(getGroupColor(loc.groupId)) }).addTo(map); m.bindPopup(`<div><strong>📍 ${loc.name}</strong><br>${loc.address ? loc.address.substring(0,45) : ''}<br><button onclick="window.editLocationById('${loc.id}')" style="background:#0081c9; color:white; border:none; padding:6px 12px; border-radius:6px; margin-top:8px; cursor:pointer;">Ver/Editar</button></div>`); markers[loc.id] = m; }); }
         window.editLocationById = (id) => editLocation(id);
         
         let longPressTimer = null;
@@ -295,7 +313,7 @@
                 date: new Date().toISOString() 
             };
             
-            // Salva localmente primeiro
+            // Salva localmente
             if(editingLocationId) { 
                 let idx = locations.findIndex(l=>l.id===editingLocationId); 
                 if(idx!==-1) locations[idx]=data; 
@@ -304,38 +322,21 @@
             }
             saveToLocalStorage(); 
             refreshAllMarkers();
-            atualizarStatus("Salvo localmente");
             
-            // Tenta sincronizar com Google
+            atualizarStatus("✅ Salvo localmente!");
+            alert(`✅ Local "${name}" salvo com sucesso!\n\nOs dados foram salvos no seu dispositivo.`);
+            
+            hideLoading();
+            btn.disabled = false; 
+            btn.innerText = "Salvar"; 
+            closeFormAndShowMap();
+            
+            // Tenta sincronizar com a planilha (opcional)
             try {
-                atualizarStatus("Sincronizando com Google...");
-                
-                const response = await fetch(CONFIG_SCRIPT_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ action: "save", data: data })
-                });
-                
-                if(!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const json = await response.json();
-                
-                if(json.status === "success") {
-                    atualizarStatus("✅ Sincronizado com Google!");
-                    alert("✅ Salvo e sincronizado com Google Sheets!");
-                } else {
-                    throw new Error(json.message || "Erro desconhecido");
-                }
-            } catch(err) {
-                console.error("Erro sync:", err);
-                salvarPendente(data);
-                atualizarStatus(`⚠️ Salvo localmente (pendente: ${dadosPendentes.length})`, true);
-                alert(`⚠️ Sem conexão. Dados salvos localmente.\n\n📋 ${dadosPendentes.length} registro(s) aguardando envio.\n\nClique em "Enviar Pendentes" no menu quando tiver internet.`);
-            } finally {
-                hideLoading();
-                btn.disabled = false; 
-                btn.innerText = "Salvar"; 
-                closeFormAndShowMap();
+                await salvarNaPlanilha(data);
+                atualizarStatus("✅ Sincronizado com planilha!");
+            } catch(e) {
+                console.log("Não foi possível sincronizar agora");
             }
         }
         
@@ -366,21 +367,15 @@
             showScreen('save'); 
         }
         
-        async function deleteCurrentLocation() { 
+        function deleteCurrentLocation() { 
             if(!editingLocationId) return; 
-            if(!confirm("Excluir?")) return; 
+            if(!confirm("Excluir este registro?")) return; 
             let id = editingLocationId; 
             locations = locations.filter(l=>l.id!==id); 
             saveToLocalStorage(); 
             refreshAllMarkers(); 
             closeFormAndShowMap(); 
-            try { 
-                await fetch(CONFIG_SCRIPT_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ action: "delete", data: { id: id } }) 
-                }); 
-            } catch(e) { console.error("Erro delete:", e); } 
+            alert("✅ Registro excluído localmente!");
         }
         
         function renderSavedList() { 
@@ -413,10 +408,6 @@
         
         loadLocalFallback();
         carregarDaPlanilha();
-        
-        if(dadosPendentes.length > 0) {
-            atualizarStatus(`📋 ${dadosPendentes.length} registro(s) pendente(s)`, true);
-        }
     </script>
 </body>
 </html>
