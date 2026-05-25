@@ -83,6 +83,8 @@
         .header-bottom {
             padding: 8px 16px;
             background: rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
         }
 
         .btn-locais-salvos {
@@ -594,7 +596,7 @@
     <div class="actions-footer" id="actionsFooter">
         <button class="action-btn action-whatsapp" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> Compartilhar</button>
         <button class="action-btn action-edit" onclick="editCadastro()"><i class="fas fa-edit"></i> Editar</button>
-        <button class="action-btn action-delete" onclick="deleteCadastro()"><i class="fas fa-trash"></i> Excluir</button>
+        <button class="action-btn action-delete" onclick="confirmDeleteCadastro()"><i class="fas fa-trash"></i> Excluir</button>
         <button class="action-btn action-change-address" onclick="changeAddressMode()"><i class="fas fa-map-marker-alt"></i> Alterar Endereço</button>
     </div>
 
@@ -828,7 +830,6 @@
             return null;
         }
         
-        // Converter imagem para Base64
         function convertImageToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -838,7 +839,6 @@
             });
         }
         
-        // Preview da imagem
         document.getElementById('imagem').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -852,7 +852,6 @@
             }
         });
         
-        // Submissão do formulário - CORRIGIDO
         document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -877,13 +876,11 @@
             const enderecoBase = document.getElementById('endereco').value;
             const enderecoCompleto = `${enderecoBase}, ${numero}`;
             
-            // Processar imagem
             let imagemBase64 = '';
             const imagemInput = document.getElementById('imagem');
             if (imagemInput.files && imagemInput.files.length > 0) {
                 try {
                     imagemBase64 = await convertImageToBase64(imagemInput.files[0]);
-                    showToast('Processando imagem...');
                 } catch (error) {
                     console.error('Erro ao converter imagem:', error);
                 }
@@ -910,28 +907,19 @@
             showToast('💾 Salvando...');
             
             try {
-                // Enviar para o Google Sheets
-                const response = await fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
                 
                 showToast('✅ Salvo com sucesso!');
                 closeForm();
-                
-                // Recarregar cadastros e adicionar marcador
                 await loadCadastros();
-                
-                // Adicionar marcador imediatamente
-                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo, formData.id, imagemBase64);
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
-                // Fallback: salvar localmente
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 if (currentEditingId) {
                     const index = localData.findIndex(c => c.id == currentEditingId);
@@ -943,7 +931,6 @@
                 showToast('⚠️ Salvo localmente!');
                 closeForm();
                 await loadCadastros();
-                addMarkerToMap(currentLatLng.lat, currentLatLng.lng, nome, formData.grupo, formData.id, imagemBase64);
             }
         });
         
@@ -962,29 +949,44 @@
             }
         }
         
-        function createCustomMarker(grupo) {
+        function getGrupoTexto(grupo) {
+            switch(grupo) {
+                case 'DROGAS': return 'DROGAS';
+                case 'HOMICÍDIO': return 'HOMICÍDIO';
+                case 'ROUBO': return 'ROUBO/FURTO';
+                default: return grupo;
+            }
+        }
+        
+        function createCustomMarker(grupo, id) {
             let markerColor = getMarkerColor(grupo);
             let iconColor = grupo === 'ROUBO' ? '#333' : 'white';
+            let grupoTexto = getGrupoTexto(grupo);
             
+            // Criar marcador com texto acima
             return L.divIcon({
-                html: `<div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                           <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
+                html: `<div style="display: flex; flex-direction: column; align-items: center;">
+                           <div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                               <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
+                           </div>
+                           <div style="background-color: ${markerColor}; color: ${iconColor}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 2px; white-space: nowrap; border: 1px solid white; text-shadow: 0 0 1px black;">
+                               ${grupoTexto}
+                           </div>
                        </div>`,
-                iconSize: [32, 32],
+                iconSize: [32, 45],
                 className: 'custom-marker',
-                popupAnchor: [0, -16]
+                popupAnchor: [0, -25]
             });
         }
         
         function addMarkerToMap(lat, lng, nome, grupo, id, imagem) {
             if (!lat || !lng) return;
             
-            // Remover marcador antigo se existir
             if (markers[id]) {
                 map.removeLayer(markers[id]);
             }
             
-            const markerIcon = createCustomMarker(grupo);
+            const markerIcon = createCustomMarker(grupo, id);
             const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
             
             let imagemHtml = '';
@@ -1004,6 +1006,11 @@
                     </button>
                 </div>
             `);
+            
+            // Adicionar evento de clique no marcador
+            marker.on('click', function() {
+                verCadastroDetalhe(id);
+            });
             
             markers[id] = marker;
             return marker;
@@ -1061,7 +1068,7 @@
                 }
                 
                 return `
-                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')">
+                <div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
                     <div class="cadastro-imagem">
                         ${imagemHtml}
                     </div>
@@ -1115,7 +1122,7 @@
                 }
                 
                 return `
-                <div class="cadastro-item" onclick="selectCadastro('${cad.id}')">
+                <div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
                     <div class="cadastro-imagem">
                         ${imagemHtml}
                     </div>
@@ -1129,16 +1136,16 @@
             `}).join('');
         }
         
-        function selectCadastro(id) {
-            selectedCadastro = allCadastros.find(c => c.id == id);
-            if (selectedCadastro) {
+        function verCadastroDetalhe(id) {
+            const cadastro = allCadastros.find(c => c.id == id);
+            if (cadastro) {
+                selectedCadastro = cadastro;
                 document.getElementById('actionsFooter').classList.add('show');
-                showToast(`📍 Selecionado: ${selectedCadastro.nome}`);
+                showToast(`📍 ${cadastro.nome}`);
                 
-                if (selectedCadastro.lat && selectedCadastro.lng) {
-                    map.setView([parseFloat(selectedCadastro.lat), parseFloat(selectedCadastro.lng)], 18);
+                if (cadastro.lat && cadastro.lng) {
+                    map.setView([parseFloat(cadastro.lat), parseFloat(cadastro.lng)], 18);
                     
-                    // Destacar marcador
                     if (markers[id]) {
                         const markerElement = markers[id].getElement();
                         if (markerElement) {
@@ -1154,8 +1161,6 @@
         
         function closeCadastrosPanel() {
             document.getElementById('cadastrosPanel').classList.remove('open');
-            document.getElementById('actionsFooter').classList.remove('show');
-            isChangingAddressMode = false;
         }
         
         function openCadastrosPanel() {
@@ -1202,12 +1207,21 @@
             }
             
             closeCadastrosPanel();
+            document.getElementById('actionsFooter').classList.remove('show');
             document.getElementById('formOverlay').style.display = 'flex';
+        }
+        
+        function confirmDeleteCadastro() {
+            if (!selectedCadastro) return;
+            if (confirm(`Tem certeza que deseja excluir "${selectedCadastro.nome}"?`)) {
+                deleteCadastro();
+            }
         }
         
         async function deleteCadastro() {
             if (!selectedCadastro) return;
-            if (!confirm(`Tem certeza que deseja excluir "${selectedCadastro.nome}"?`)) return;
+            
+            showToast('🗑️ Excluindo...');
             
             try {
                 await fetch(SCRIPT_URL, {
@@ -1216,7 +1230,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
                 });
-                showToast('🗑️ Excluído com sucesso!');
                 
                 if (markers[selectedCadastro.id]) {
                     map.removeLayer(markers[selectedCadastro.id]);
@@ -1225,7 +1238,11 @@
                 
                 await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
+                selectedCadastro = null;
+                showToast('✅ Excluído com sucesso!');
+                
             } catch (error) {
+                console.error('Erro ao excluir:', error);
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 localData = localData.filter(c => c.id != selectedCadastro.id);
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
@@ -1235,9 +1252,10 @@
                     delete markers[selectedCadastro.id];
                 }
                 
-                showToast('⚠️ Excluído localmente!');
                 await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
+                selectedCadastro = null;
+                showToast('⚠️ Excluído localmente!');
             }
         }
         
@@ -1245,6 +1263,7 @@
             if (!selectedCadastro) return;
             isChangingAddressMode = true;
             closeCadastrosPanel();
+            document.getElementById('actionsFooter').classList.remove('show');
             showToast('📍 Clique no mapa para selecionar o novo endereço');
             
             map.once('click', async (e) => {
@@ -1280,6 +1299,7 @@
                     await loadCadastros();
                 }
                 isChangingAddressMode = false;
+                selectedCadastro = null;
             });
         }
         
@@ -1299,18 +1319,13 @@
             return div.innerHTML;
         }
         
-        function verCadastroDetalhe(id) {
-            selectCadastro(id);
-        }
-        
         // Expor funções globalmente
         window.verCadastroDetalhe = verCadastroDetalhe;
-        window.selectCadastro = selectCadastro;
         window.closeCadastrosPanel = closeCadastrosPanel;
         window.filterCadastros = filterCadastros;
         window.shareWhatsApp = shareWhatsApp;
         window.editCadastro = editCadastro;
-        window.deleteCadastro = deleteCadastro;
+        window.confirmDeleteCadastro = confirmDeleteCadastro;
         window.changeAddressMode = changeAddressMode;
         window.closeForm = closeForm;
         window.openCadastrosPanel = openCadastrosPanel;
