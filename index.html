@@ -22,14 +22,12 @@
             position: relative;
         }
 
-        /* Mapa */
         #map {
             height: 100%;
             width: 100%;
             z-index: 1;
         }
 
-        /* Header superior com logo */
         .app-header {
             position: fixed;
             top: 0;
@@ -107,7 +105,6 @@
             transform: scale(0.98);
         }
 
-        /* Overlay e Formulário */
         .overlay {
             position: fixed;
             top: 0;
@@ -243,7 +240,6 @@
             color: white;
         }
 
-        /* Aba de Cadastros */
         .cadastros-panel {
             position: fixed;
             top: 0;
@@ -398,7 +394,6 @@
         .grupo-ROUBO { background: #ffcc00; color: #333; }
         .grupo-OUTRO { background: #607d8b; color: white; }
 
-        /* Rodapé de ações */
         .actions-footer {
             position: fixed;
             bottom: 0;
@@ -435,7 +430,6 @@
         .action-delete { background: #dc3545; color: white; }
         .action-change-address { background: #9c27b0; color: white; }
 
-        /* Toast de notificação */
         .toast {
             position: fixed;
             bottom: 80px;
@@ -452,7 +446,6 @@
             max-width: 80%;
         }
 
-        /* Indicador de long press */
         .long-press-indicator {
             position: fixed;
             bottom: 100px;
@@ -491,7 +484,6 @@
 <body>
     <div id="map"></div>
     
-    <!-- Header Superior com Logo -->
     <div class="app-header">
         <div class="header-top">
             <div class="logo-area">
@@ -511,7 +503,6 @@
         </div>
     </div>
     
-    <!-- Formulário de marcação -->
     <div class="overlay" id="formOverlay">
         <div class="form-container">
             <h2><i class="fas fa-map-marker-alt"></i> Nova Marcação</h2>
@@ -570,7 +561,6 @@
         </div>
     </div>
 
-    <!-- Painel de Cadastros -->
     <div class="cadastros-panel" id="cadastrosPanel">
         <div class="panel-header">
             <h3><i class="fas fa-database"></i> Locais Salvos</h3>
@@ -592,7 +582,6 @@
         </div>
     </div>
 
-    <!-- Rodapé de ações -->
     <div class="actions-footer" id="actionsFooter">
         <button class="action-btn action-whatsapp" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i> Compartilhar</button>
         <button class="action-btn action-edit" onclick="editCadastro()"><i class="fas fa-edit"></i> Editar</button>
@@ -605,10 +594,9 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Configuração
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx4tySnzL0gBwuTIfetwpMIVprs2ptPXafcf-l4pBlkEHFNESgnMIXptP25UshtWCI9/exec';
+        // CONFIGURAÇÃO - ALTERE PARA SUA URL DO APPS SCRIPT
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec';
         
-        // Variáveis globais
         let map;
         let longPressTimeout = null;
         let currentLatLng = null;
@@ -622,10 +610,8 @@
         let touchMoveTriggered = false;
         let markers = {};
         
-        // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             init();
-            
             document.getElementById('btnLocaisSalvos').addEventListener('click', openCadastrosPanel);
             document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -647,7 +633,6 @@
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
             }).addTo(map);
             
-            // Eventos para toque longo
             const mapContainer = map.getContainer();
             
             mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -753,7 +738,6 @@
             
             currentLatLng = latlng;
             
-            // Marcador temporário
             const tempMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
                     html: '<div style="background-color: #1a7431; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
@@ -764,14 +748,12 @@
             
             setTimeout(() => map.removeLayer(tempMarker), 2000);
             
-            // Obter endereço
             currentAddress = await getAddress(latlng.lat, latlng.lng);
             currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
             
             document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
             document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
             
-            // Limpar formulário
             document.getElementById('nome').value = '';
             document.getElementById('cpf').value = '';
             document.getElementById('contato').value = '';
@@ -791,8 +773,11 @@
         
         function removerNumeroDoEndereco(endereco) {
             if (!endereco) return '';
-            let enderecoSemNumero = endereco.replace(/,\s*\d+\s*,/, ',');
-            enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+$/, '');
+            // Remove números no final do endereço (ex: "Rua A, 123" -> "Rua A")
+            let enderecoSemNumero = endereco.replace(/,\s*\d+$/, '');
+            // Remove números seguidos de vírgula (ex: "Rua A, 123, Bairro" -> "Rua A, Bairro")
+            enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+\s*,/, ',');
+            // Remove traços com números
             enderecoSemNumero = enderecoSemNumero.replace(/-\s*\d+/, '');
             return enderecoSemNumero;
         }
@@ -907,19 +892,26 @@
             showToast('💾 Salvando...');
             
             try {
-                await fetch(SCRIPT_URL, {
+                // CORREÇÃO: Removido mode: 'no-cors'
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
                 
-                showToast('✅ Salvo com sucesso!');
-                closeForm();
-                await loadCadastros();
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('✅ Salvo com sucesso!');
+                    closeForm();
+                    await loadCadastros();
+                } else {
+                    throw new Error(result.error || 'Erro ao salvar');
+                }
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
+                // Fallback para localStorage
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 if (currentEditingId) {
                     const index = localData.findIndex(c => c.id == currentEditingId);
@@ -928,7 +920,7 @@
                     localData.push(formData);
                 }
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                showToast('⚠️ Salvo localmente!');
+                showToast('⚠️ Salvo localmente! (offline)');
                 closeForm();
                 await loadCadastros();
             }
@@ -963,7 +955,6 @@
             let iconColor = grupo === 'ROUBO' ? '#333' : 'white';
             let grupoTexto = getGrupoTexto(grupo);
             
-            // Criar marcador com texto acima
             return L.divIcon({
                 html: `<div style="display: flex; flex-direction: column; align-items: center;">
                            <div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -1007,7 +998,6 @@
                 </div>
             `);
             
-            // Adicionar evento de clique no marcador
             marker.on('click', function() {
                 verCadastroDetalhe(id);
             });
@@ -1020,6 +1010,7 @@
             showToast('🔄 Carregando cadastros...');
             
             try {
+                // CORREÇÃO: Removido mode: 'no-cors'
                 const response = await fetch(`${SCRIPT_URL}?action=get`);
                 const data = await response.json();
                 
@@ -1036,7 +1027,6 @@
             
             renderCadastrosList();
             
-            // Limpar todos os marcadores
             Object.keys(markers).forEach(key => {
                 if (markers[key]) {
                     map.removeLayer(markers[key]);
@@ -1044,7 +1034,6 @@
             });
             markers = {};
             
-            // Recriar marcadores
             allCadastros.forEach(cad => {
                 if (cad.lat && cad.lng) {
                     addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
@@ -1179,10 +1168,10 @@
             
             let numero = '';
             let enderecoSemNumero = selectedCadastro.endereco || '';
-            const numeroMatch = enderecoSemNumero.match(/,([^,]*)$/);
+            const numeroMatch = enderecoSemNumero.match(/,([^,]+)$/);
             if (numeroMatch) {
                 numero = numeroMatch[1].trim();
-                enderecoSemNumero = enderecoSemNumero.replace(/,([^,]*)$/, '');
+                enderecoSemNumero = enderecoSemNumero.replace(/,([^,]+)$/, '');
             }
             
             currentEditingId = selectedCadastro.id;
@@ -1224,22 +1213,28 @@
             showToast('🗑️ Excluindo...');
             
             try {
-                await fetch(SCRIPT_URL, {
+                // CORREÇÃO: Removido mode: 'no-cors'
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
                 });
                 
-                if (markers[selectedCadastro.id]) {
-                    map.removeLayer(markers[selectedCadastro.id]);
-                    delete markers[selectedCadastro.id];
-                }
+                const result = await response.json();
                 
-                await loadCadastros();
-                document.getElementById('actionsFooter').classList.remove('show');
-                selectedCadastro = null;
-                showToast('✅ Excluído com sucesso!');
+                if (result.success) {
+                    if (markers[selectedCadastro.id]) {
+                        map.removeLayer(markers[selectedCadastro.id]);
+                        delete markers[selectedCadastro.id];
+                    }
+                    
+                    await loadCadastros();
+                    document.getElementById('actionsFooter').classList.remove('show');
+                    selectedCadastro = null;
+                    showToast('✅ Excluído com sucesso!');
+                } else {
+                    throw new Error(result.error || 'Erro ao excluir');
+                }
                 
             } catch (error) {
                 console.error('Erro ao excluir:', error);
@@ -1282,14 +1277,21 @@
                 };
                 
                 try {
-                    await fetch(SCRIPT_URL, {
+                    // CORREÇÃO: Removido mode: 'no-cors'
+                    const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ action: 'update', ...updatedCadastro })
                     });
-                    showToast('✅ Endereço atualizado!');
-                    await loadCadastros();
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showToast('✅ Endereço atualizado!');
+                        await loadCadastros();
+                    } else {
+                        throw new Error(result.error || 'Erro ao atualizar');
+                    }
                 } catch (error) {
                     let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                     const index = localData.findIndex(c => c.id == selectedCadastro.id);
@@ -1319,7 +1321,6 @@
             return div.innerHTML;
         }
         
-        // Expor funções globalmente
         window.verCadastroDetalhe = verCadastroDetalhe;
         window.closeCadastrosPanel = closeCadastrosPanel;
         window.filterCadastros = filterCadastros;
