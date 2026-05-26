@@ -528,6 +528,26 @@
                 font-size: 20px;
             }
         }
+
+        /* Estilo para o texto do marcador - primeira palavra */
+        .marker-label {
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 12px;
+            white-space: nowrap;
+            margin-top: 4px;
+            font-family: 'Segoe UI', sans-serif;
+            letter-spacing: 0.5px;
+            border: 1px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 <body>
@@ -644,7 +664,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ============================================
-        // URL CORRIGIDA DO WEB APP - ATUALIZADA
+        // URL CORRIGIDA DO WEB APP
         // ============================================
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec';
         
@@ -659,10 +679,10 @@
         let currentEditingId = null;
         let touchStartCoords = null;
         let touchMoveTriggered = false;
-        let markers = {};
+        let markers = {}; // { id: marker }
         
         function getPrimeiraPalavraNome(nomeCompleto) {
-            if (!nomeCompleto) return '';
+            if (!nomeCompleto) return '?';
             return nomeCompleto.trim().split(' ')[0];
         }
         
@@ -706,14 +726,11 @@
         
         function onTouchStart(e) {
             e.preventDefault();
-            
             const touch = e.touches[0];
             const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
             touchStartCoords = { x: touch.clientX, y: touch.clientY };
             touchMoveTriggered = false;
-            
             document.getElementById('longPressIndicator').style.display = 'block';
-            
             longPressTimeout = setTimeout(() => {
                 if (!touchMoveTriggered && touchStartCoords) {
                     document.getElementById('longPressIndicator').style.display = 'none';
@@ -724,76 +741,51 @@
         
         function onTouchMove(e) {
             if (!touchStartCoords) return;
-            
             const touch = e.touches[0];
             const deltaX = Math.abs(touch.clientX - touchStartCoords.x);
             const deltaY = Math.abs(touch.clientY - touchStartCoords.y);
-            
             if (deltaX > 10 || deltaY > 10) {
                 touchMoveTriggered = true;
-                if (longPressTimeout) {
-                    clearTimeout(longPressTimeout);
-                    longPressTimeout = null;
-                }
+                if (longPressTimeout) clearTimeout(longPressTimeout);
                 document.getElementById('longPressIndicator').style.display = 'none';
             }
         }
         
-        function onTouchEnd(e) {
-            if (longPressTimeout) {
-                clearTimeout(longPressTimeout);
-                longPressTimeout = null;
-            }
+        function onTouchEnd() {
+            if (longPressTimeout) clearTimeout(longPressTimeout);
             document.getElementById('longPressIndicator').style.display = 'none';
             touchStartCoords = null;
-            touchMoveTriggered = false;
         }
         
-        function onTouchCancel(e) {
-            if (longPressTimeout) {
-                clearTimeout(longPressTimeout);
-                longPressTimeout = null;
-            }
+        function onTouchCancel() {
+            if (longPressTimeout) clearTimeout(longPressTimeout);
             document.getElementById('longPressIndicator').style.display = 'none';
             touchStartCoords = null;
         }
         
         let mouseDownCoords = null;
-        
         function onMouseDown(e) {
             mouseDownCoords = { x: e.clientX, y: e.clientY };
             const point = map.containerPointToLatLng([e.clientX, e.clientY]);
-            
             longPressTimeout = setTimeout(() => {
-                if (mouseDownCoords) {
-                    handleLongPress(point);
-                }
+                if (mouseDownCoords) handleLongPress(point);
             }, 2000);
         }
         
-        function onMouseUp(e) {
-            if (longPressTimeout) {
-                clearTimeout(longPressTimeout);
-                longPressTimeout = null;
-            }
+        function onMouseUp() {
+            if (longPressTimeout) clearTimeout(longPressTimeout);
             mouseDownCoords = null;
         }
         
-        function onMouseCancel(e) {
-            if (longPressTimeout) {
-                clearTimeout(longPressTimeout);
-                longPressTimeout = null;
-            }
+        function onMouseCancel() {
+            if (longPressTimeout) clearTimeout(longPressTimeout);
             mouseDownCoords = null;
         }
         
         async function handleLongPress(latlng) {
             if (!latlng) return;
-            
             showToast('📍 Marcando local...');
-            
             currentLatLng = latlng;
-            
             const tempMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
                     html: '<div style="background-color: #1a7431; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); animation: pulse 1s infinite;"></div>',
@@ -801,12 +793,10 @@
                     className: 'temp-marker'
                 })
             }).addTo(map);
-            
             setTimeout(() => map.removeLayer(tempMarker), 2000);
             
             currentAddress = await getAddress(latlng.lat, latlng.lng);
             currentAddressWithoutNumber = removerNumeroDoEndereco(currentAddress);
-            
             document.getElementById('enderecoDetectado').innerHTML = currentAddressWithoutNumber || currentAddress;
             document.getElementById('endereco').value = currentAddressWithoutNumber || currentAddress;
             
@@ -818,12 +808,8 @@
             document.getElementById('grupo').value = 'DROGAS';
             document.getElementById('imagem').value = '';
             document.getElementById('preview').style.display = 'none';
-            document.getElementById('preview').src = '';
-            
             currentEditingId = null;
-            
             await buscarNumeroPorLocalizacao();
-            
             document.getElementById('formOverlay').style.display = 'flex';
         }
         
@@ -839,12 +825,8 @@
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`);
                 const data = await response.json();
-                if (data.display_name) {
-                    return data.display_name;
-                }
-                return `${lat}, ${lng}`;
+                return data.display_name || `${lat}, ${lng}`;
             } catch (error) {
-                console.error('Erro ao obter endereço:', error);
                 return `${lat}, ${lng}`;
             }
         }
@@ -862,9 +844,7 @@
         async function simularBuscaNumero(lat, lng) {
             const latHash = Math.floor(Math.abs(lat) * 10000) % 100;
             const lngHash = Math.floor(Math.abs(lng) * 10000) % 100;
-            if (latHash > 0 || lngHash > 0) {
-                return `${latHash}${lngHash}`;
-            }
+            if (latHash > 0 || lngHash > 0) return `${latHash}${lngHash}`;
             return null;
         }
         
@@ -872,7 +852,7 @@
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result);
-                reader.onerror = (error) => reject(error);
+                reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         }
@@ -892,36 +872,18 @@
         
         document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const nome = document.getElementById('nome').value;
             const numero = document.getElementById('numero').value;
-            
-            if (!nome) {
-                showToast('Por favor, preencha o Nome');
-                return;
-            }
-            
-            if (!numero) {
-                showToast('Por favor, informe o número da casa/lote');
-                return;
-            }
-            
-            if (!currentLatLng) {
-                showToast('Erro: Localização não definida');
-                return;
-            }
+            if (!nome) { showToast('Preencha o Nome'); return; }
+            if (!numero) { showToast('Informe o número da casa/lote'); return; }
+            if (!currentLatLng) { showToast('Localização não definida'); return; }
             
             const enderecoBase = document.getElementById('endereco').value;
             const enderecoCompleto = `${enderecoBase}, ${numero}`;
-            
             let imagemBase64 = '';
             const imagemInput = document.getElementById('imagem');
             if (imagemInput.files && imagemInput.files.length > 0) {
-                try {
-                    imagemBase64 = await convertImageToBase64(imagemInput.files[0]);
-                } catch (error) {
-                    console.error('Erro ao converter imagem:', error);
-                }
+                try { imagemBase64 = await convertImageToBase64(imagemInput.files[0]); } catch(e) {}
             } else if (document.getElementById('preview').src && document.getElementById('preview').src.startsWith('data:')) {
                 imagemBase64 = document.getElementById('preview').src;
             }
@@ -941,35 +903,21 @@
                 imagem: imagemBase64,
                 data: new Date().toISOString()
             };
-            
             showToast('💾 Salvando...');
-            
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // Mantido para compatibilidade CORS
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                
-                // Como está em no-cors, não podemos ler a resposta
-                // Mas assumimos que deu certo se não houve erro de rede
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(formData) });
                 showToast('✅ Salvo com sucesso!');
                 closeForm();
                 await loadCadastros();
-                
             } catch (error) {
-                console.error('Erro ao salvar:', error);
-                // Fallback para localStorage
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 if (currentEditingId) {
-                    const index = localData.findIndex(c => c.id == currentEditingId);
-                    if (index !== -1) localData[index] = formData;
-                } else {
-                    localData.push(formData);
-                }
+                    const idx = localData.findIndex(c => c.id == currentEditingId);
+                    if (idx !== -1) localData[idx] = formData;
+                    else localData.push(formData);
+                } else localData.push(formData);
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                showToast('⚠️ Salvo localmente! (offline)');
+                showToast('⚠️ Salvo localmente (offline)');
                 closeForm();
                 await loadCadastros();
             }
@@ -990,105 +938,72 @@
             }
         }
         
-        function getGrupoTexto(grupo) {
-            switch(grupo) {
-                case 'DROGAS': return 'DROGAS';
-                case 'HOMICÍDIO': return 'HOMICÍDIO';
-                case 'ROUBO': return 'ROUBO/FURTO';
-                default: return grupo;
-            }
-        }
-        
         function createCustomMarker(grupo, nome, id) {
-            let markerColor = getMarkerColor(grupo);
-            let iconColor = grupo === 'ROUBO' ? '#333' : 'white';
-            let primeiraPalavra = getPrimeiraPalavraNome(nome);
+            const cor = getMarkerColor(grupo);
+            const primeiraPalavra = getPrimeiraPalavraNome(nome);
+            const textoCor = grupo === 'ROUBO' ? '#333' : 'white';
             
+            // Ícone combinando círculo + label com a primeira palavra
+            const html = `
+                <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+                    <div style="background-color: ${cor}; width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-map-marker-alt" style="color: ${textoCor}; font-size: 18px;"></i>
+                    </div>
+                    <div class="marker-label" style="background-color: ${cor}; color: ${textoCor}; border: 1px solid white; text-shadow: 0 0 1px black;">
+                        ${escapeHtml(primeiraPalavra)}
+                    </div>
+                </div>
+            `;
             return L.divIcon({
-                html: `<div style="display: flex; flex-direction: column; align-items: center;">
-                           <div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                               <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
-                           </div>
-                           <div style="background-color: ${markerColor}; color: ${iconColor}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 2px; white-space: nowrap; border: 1px solid white; text-shadow: 0 0 1px black; max-width: 80px; overflow: hidden; text-overflow: ellipsis;">
-                               ${escapeHtml(primeiraPalavra)}
-                           </div>
-                       </div>`,
-                iconSize: [32, 45],
-                className: 'custom-marker',
-                popupAnchor: [0, -25]
+                html: html,
+                iconSize: [36, 56],
+                className: 'custom-marker-wrapper',
+                popupAnchor: [0, -30]
             });
         }
         
         function addMarkerToMap(lat, lng, nome, grupo, id, imagem, endereco) {
             if (!lat || !lng) return;
-            
-            if (markers[id]) {
-                map.removeLayer(markers[id]);
-            }
+            if (markers[id]) map.removeLayer(markers[id]);
             
             const markerIcon = createCustomMarker(grupo, nome, id);
             const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
-            
-            let imagemHtml = '';
-            if (imagem && imagem.startsWith('data:image')) {
-                imagemHtml = `<img src="${imagem}" class="popup-imagem" alt="foto">`;
-            } else {
-                imagemHtml = `<div class="popup-imagem" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 32px;"><i class="fas fa-user"></i></div>`;
-            }
+            let imagemHtml = (imagem && imagem.startsWith('data:image')) 
+                ? `<img src="${imagem}" class="popup-imagem" alt="foto">`
+                : `<div class="popup-imagem" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 32px;"><i class="fas fa-user"></i></div>`;
             
             const popupContent = `
                 <div class="custom-popup">
                     ${imagemHtml}
                     <div class="popup-nome">${escapeHtml(nome)}</div>
                     <div class="popup-grupo" style="background-color: ${getMarkerColor(grupo)}; color: ${grupo === 'ROUBO' ? '#333' : 'white'}">
-                        ${getGrupoTexto(grupo)}
+                        ${grupo}
                     </div>
-                    <div class="popup-endereco">
-                        <i class="fas fa-map-marker-alt" style="font-size: 10px;"></i> ${escapeHtml(endereco || 'Sem endereço')}
-                    </div>
-                    <button onclick="verCadastroDetalhe('${id}')">
-                        <i class="fas fa-info-circle"></i> Ver detalhes
-                    </button>
+                    <div class="popup-endereco"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(endereco || 'Sem endereço')}</div>
+                    <button onclick="verCadastroDetalhe('${id}')"><i class="fas fa-info-circle"></i> Ver detalhes</button>
                 </div>
             `;
-            
             marker.bindPopup(popupContent);
-            
-            marker.on('click', function() {
-                verCadastroDetalhe(id);
-            });
-            
+            marker.on('click', () => verCadastroDetalhe(id));
             markers[id] = marker;
             return marker;
         }
         
         async function loadCadastros() {
             showToast('🔄 Carregando cadastros...');
-            
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=get`);
                 const data = await response.json();
-                
-                if (data && data.cadastros && data.cadastros.length > 0) {
-                    allCadastros = data.cadastros;
-                } else {
-                    throw new Error('Sem dados');
-                }
+                if (data && data.cadastros && data.cadastros.length > 0) allCadastros = data.cadastros;
+                else throw new Error('Sem dados');
             } catch (error) {
-                console.error('Erro ao carregar da planilha, usando localStorage:', error);
-                const localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
-                allCadastros = localData;
+                console.error('Erro planilha, usando localStorage:', error);
+                allCadastros = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
             }
-            
             renderCadastrosList();
-            
-            Object.keys(markers).forEach(key => {
-                if (markers[key]) {
-                    map.removeLayer(markers[key]);
-                }
-            });
+            // Recria todos os marcadores no mapa
+            Object.keys(markers).forEach(key => { if (markers[key]) map.removeLayer(markers[key]); });
             markers = {};
-            
             allCadastros.forEach(cad => {
                 if (cad.lat && cad.lng) {
                     addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem, cad.endereco);
@@ -1102,37 +1017,25 @@
                 container.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum cadastro encontrado</div>';
                 return;
             }
-            
             container.innerHTML = allCadastros.map(cad => {
-                let imagemHtml = '';
-                if (cad.imagem && cad.imagem.startsWith('data:image')) {
-                    imagemHtml = `<img src="${cad.imagem}" alt="foto" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-                } else {
-                    imagemHtml = `<i class="fas fa-user" style="font-size: 24px;"></i>`;
-                }
-                
+                let imagemHtml = (cad.imagem && cad.imagem.startsWith('data:image')) 
+                    ? `<img src="${cad.imagem}" alt="foto" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
+                    : `<i class="fas fa-user" style="font-size: 24px;"></i>`;
                 return `
                 <div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
-                    <div class="cadastro-imagem">
-                        ${imagemHtml}
-                    </div>
+                    <div class="cadastro-imagem">${imagemHtml}</div>
                     <div class="cadastro-info">
                         <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
                         <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
                         <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
                         <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
                     </div>
-                </div>
-            `}).join('');
+                </div>`;
+            }).join('');
         }
         
         function getIconForGrupo(grupo) {
-            const icons = {
-                'DROGAS': 'fa-capsules',
-                'ROUBO': 'fa-gavel',
-                'HOMICÍDIO': 'fa-skull',
-                'OUTRO': 'fa-tag'
-            };
+            const icons = { 'DROGAS': 'fa-capsules', 'ROUBO': 'fa-gavel', 'HOMICÍDIO': 'fa-skull', 'OUTRO': 'fa-tag' };
             return icons[grupo] || 'fa-map-marker';
         }
         
@@ -1141,43 +1044,29 @@
             const searchCpf = document.getElementById('searchCpf').value.toLowerCase();
             const searchEndereco = document.getElementById('searchEndereco').value.toLowerCase();
             const searchNumero = document.getElementById('searchNumero').value.toLowerCase();
-            
             const filtered = allCadastros.filter(cad => {
-                let match = true;
-                if (searchNome && !cad.nome.toLowerCase().includes(searchNome)) match = false;
-                if (searchCpf && !(cad.cpf || '').toLowerCase().includes(searchCpf)) match = false;
-                if (searchEndereco && !(cad.endereco || '').toLowerCase().includes(searchEndereco)) match = false;
-                if (searchNumero && !(cad.numero || '').toLowerCase().includes(searchNumero) && !(cad.endereco || '').toLowerCase().includes(searchNumero)) match = false;
-                return match;
+                if (searchNome && !cad.nome.toLowerCase().includes(searchNome)) return false;
+                if (searchCpf && !(cad.cpf || '').toLowerCase().includes(searchCpf)) return false;
+                if (searchEndereco && !(cad.endereco || '').toLowerCase().includes(searchEndereco)) return false;
+                if (searchNumero && !(cad.numero || '').toLowerCase().includes(searchNumero) && !(cad.endereco || '').toLowerCase().includes(searchNumero)) return false;
+                return true;
             });
-            
             const container = document.getElementById('cadastrosList');
-            if (!filtered.length) {
-                container.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum resultado encontrado</div>';
-                return;
-            }
-            
+            if (!filtered.length) { container.innerHTML = '<div style="text-align:center;padding:20px;">Nenhum resultado</div>'; return; }
             container.innerHTML = filtered.map(cad => {
-                let imagemHtml = '';
-                if (cad.imagem && cad.imagem.startsWith('data:image')) {
-                    imagemHtml = `<img src="${cad.imagem}" alt="foto" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-                } else {
-                    imagemHtml = `<i class="fas fa-user" style="font-size: 24px;"></i>`;
-                }
-                
-                return `
-                <div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
-                    <div class="cadastro-imagem">
-                        ${imagemHtml}
-                    </div>
+                let imagemHtml = (cad.imagem && cad.imagem.startsWith('data:image')) 
+                    ? `<img src="${cad.imagem}" alt="foto" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
+                    : `<i class="fas fa-user" style="font-size: 24px;"></i>`;
+                return `<div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
+                    <div class="cadastro-imagem">${imagemHtml}</div>
                     <div class="cadastro-info">
                         <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
                         <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
                         <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
                         <span class="grupo-badge grupo-${cad.grupo}">${cad.grupo}</span>
                     </div>
-                </div>
-            `}).join('');
+                </div>`;
+            }).join('');
         }
         
         function verCadastroDetalhe(id) {
@@ -1186,55 +1075,35 @@
                 selectedCadastro = cadastro;
                 document.getElementById('actionsFooter').classList.add('show');
                 showToast(`📍 ${cadastro.nome}`);
-                
                 if (cadastro.lat && cadastro.lng) {
                     map.setView([parseFloat(cadastro.lat), parseFloat(cadastro.lng)], 18);
                     map.closePopup();
-                    
                     if (markers[id]) {
                         markers[id].openPopup();
-                        const markerElement = markers[id].getElement();
-                        if (markerElement) {
-                            markerElement.style.transform = 'scale(1.2)';
-                            setTimeout(() => {
-                                if (markerElement) markerElement.style.transform = 'scale(1)';
-                            }, 500);
-                        }
+                        const el = markers[id].getElement();
+                        if (el) el.style.transform = 'scale(1.2)';
+                        setTimeout(() => { if(el) el.style.transform = ''; }, 500);
                     }
                 }
             }
         }
         
-        function closeCadastrosPanel() {
-            document.getElementById('cadastrosPanel').classList.remove('open');
-        }
-        
-        function openCadastrosPanel() {
-            document.getElementById('cadastrosPanel').classList.add('open');
-            loadCadastros();
-        }
-        
+        function closeCadastrosPanel() { document.getElementById('cadastrosPanel').classList.remove('open'); }
+        function openCadastrosPanel() { document.getElementById('cadastrosPanel').classList.add('open'); loadCadastros(); }
         function shareWhatsApp() {
-            if (!selectedCadastro) return;
-            const message = `📍 *MAPA DO CRIME - NBO*%0A%0A*Local:* ${selectedCadastro.nome}%0A*Endereço:* ${selectedCadastro.endereco}%0A*Grupo:* ${selectedCadastro.grupo}%0A*Nota:* ${selectedCadastro.nota || 'N/A'}%0A*Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
-            window.open(`https://wa.me/?text=${message}`, '_blank');
+            if(!selectedCadastro) return;
+            const msg = `📍 *MAPA DO CRIME - NBO*%0A%0A*Local:* ${selectedCadastro.nome}%0A*Endereço:* ${selectedCadastro.endereco}%0A*Grupo:* ${selectedCadastro.grupo}%0A*Nota:* ${selectedCadastro.nota || 'N/A'}%0A*Coordenadas:* ${selectedCadastro.lat}, ${selectedCadastro.lng}`;
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
         }
         
         function editCadastro() {
-            if (!selectedCadastro) return;
-            
+            if(!selectedCadastro) return;
             let numero = '';
             let enderecoSemNumero = selectedCadastro.endereco || '';
-            const numeroMatch = enderecoSemNumero.match(/,([^,]+)$/);
-            if (numeroMatch) {
-                numero = numeroMatch[1].trim();
-                enderecoSemNumero = enderecoSemNumero.replace(/,([^,]+)$/, '');
-            }
-            
+            const match = enderecoSemNumero.match(/,([^,]+)$/);
+            if(match) { numero = match[1].trim(); enderecoSemNumero = enderecoSemNumero.replace(/,([^,]+)$/, ''); }
             currentEditingId = selectedCadastro.id;
             currentLatLng = { lat: parseFloat(selectedCadastro.lat), lng: parseFloat(selectedCadastro.lng) };
-            currentAddress = enderecoSemNumero;
-            
             document.getElementById('nome').value = selectedCadastro.nome;
             document.getElementById('cpf').value = selectedCadastro.cpf || '';
             document.getElementById('contato').value = selectedCadastro.contato || '';
@@ -1243,128 +1112,73 @@
             document.getElementById('numero').value = numero;
             document.getElementById('grupo').value = selectedCadastro.grupo;
             document.getElementById('nota').value = selectedCadastro.nota || '';
-            
-            if (selectedCadastro.imagem && selectedCadastro.imagem.startsWith('data:image')) {
+            if(selectedCadastro.imagem && selectedCadastro.imagem.startsWith('data:image')) {
                 document.getElementById('preview').src = selectedCadastro.imagem;
                 document.getElementById('preview').style.display = 'block';
-            } else {
-                document.getElementById('preview').style.display = 'none';
-                document.getElementById('preview').src = '';
-            }
-            
+            } else { document.getElementById('preview').style.display = 'none'; }
             closeCadastrosPanel();
             document.getElementById('actionsFooter').classList.remove('show');
             document.getElementById('formOverlay').style.display = 'flex';
         }
         
-        function confirmDeleteCadastro() {
-            if (!selectedCadastro) return;
-            if (confirm(`Tem certeza que deseja excluir "${selectedCadastro.nome}"?`)) {
-                deleteCadastro();
-            }
-        }
-        
+        function confirmDeleteCadastro() { if(selectedCadastro && confirm(`Excluir "${selectedCadastro.nome}"?`)) deleteCadastro(); }
         async function deleteCadastro() {
-            if (!selectedCadastro) return;
-            
+            if(!selectedCadastro) return;
             showToast('🗑️ Excluindo...');
-            
             try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
-                });
-                
-                if (markers[selectedCadastro.id]) {
-                    map.removeLayer(markers[selectedCadastro.id]);
-                    delete markers[selectedCadastro.id];
-                }
-                
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', id: selectedCadastro.id }) });
+                if(markers[selectedCadastro.id]) map.removeLayer(markers[selectedCadastro.id]);
                 await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
                 selectedCadastro = null;
-                showToast('✅ Excluído com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao excluir:', error);
+                showToast('✅ Excluído');
+            } catch(error) {
                 let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                 localData = localData.filter(c => c.id != selectedCadastro.id);
                 localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                
-                if (markers[selectedCadastro.id]) {
-                    map.removeLayer(markers[selectedCadastro.id]);
-                    delete markers[selectedCadastro.id];
-                }
-                
+                if(markers[selectedCadastro.id]) map.removeLayer(markers[selectedCadastro.id]);
                 await loadCadastros();
                 document.getElementById('actionsFooter').classList.remove('show');
                 selectedCadastro = null;
-                showToast('⚠️ Excluído localmente!');
+                showToast('⚠️ Excluído localmente');
             }
         }
         
         function changeAddressMode() {
-            if (!selectedCadastro) return;
-            isChangingAddressMode = true;
+            if(!selectedCadastro) return;
             closeCadastrosPanel();
             document.getElementById('actionsFooter').classList.remove('show');
-            showToast('📍 Clique no mapa para selecionar o novo endereço');
-            
+            showToast('📍 Clique no mapa para novo endereço');
             map.once('click', async (e) => {
                 const newLatLng = e.latlng;
                 const newAddress = await getAddress(newLatLng.lat, newLatLng.lng);
                 const newAddressWithoutNumber = removerNumeroDoEndereco(newAddress);
-                
                 const numeroAtual = selectedCadastro.numero || '';
                 const enderecoCompleto = `${newAddressWithoutNumber}, ${numeroAtual}`;
-                
-                const updatedCadastro = {
-                    ...selectedCadastro,
-                    lat: newLatLng.lat,
-                    lng: newLatLng.lng,
-                    endereco: enderecoCompleto
-                };
-                
+                const updated = { ...selectedCadastro, lat: newLatLng.lat, lng: newLatLng.lng, endereco: enderecoCompleto };
                 try {
-                    await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'update', ...updatedCadastro })
-                    });
-                    
+                    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', ...updated }) });
                     showToast('✅ Endereço atualizado!');
                     await loadCadastros();
-                } catch (error) {
+                } catch(err) {
                     let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
-                    const index = localData.findIndex(c => c.id == selectedCadastro.id);
-                    if (index !== -1) localData[index] = updatedCadastro;
+                    const idx = localData.findIndex(c => c.id == selectedCadastro.id);
+                    if(idx !== -1) localData[idx] = updated;
                     localStorage.setItem('cadastros_local', JSON.stringify(localData));
-                    showToast('⚠️ Endereço atualizado localmente!');
+                    showToast('⚠️ Endereço atualizado localmente');
                     await loadCadastros();
                 }
-                isChangingAddressMode = false;
                 selectedCadastro = null;
             });
         }
         
-        function showToast(message) {
+        function showToast(msg) {
             const toast = document.getElementById('toast');
-            toast.textContent = message;
+            toast.textContent = msg;
             toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
+            setTimeout(() => toast.style.display = 'none', 3000);
         }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        function escapeHtml(text) { if(!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         
         window.verCadastroDetalhe = verCadastroDetalhe;
         window.closeCadastrosPanel = closeCadastrosPanel;
@@ -1376,24 +1190,9 @@
         window.closeForm = closeForm;
         window.openCadastrosPanel = openCadastrosPanel;
         
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(0.5); opacity: 1; }
-                100% { transform: scale(2); opacity: 0; }
-            }
-            .temp-marker { animation: pulse 1s infinite; }
-            .custom-marker div:hover { transform: scale(1.1); transition: transform 0.2s; }
-            .leaflet-popup-content-wrapper {
-                border-radius: 12px;
-                padding: 0;
-            }
-            .leaflet-popup-content {
-                margin: 0;
-                min-width: 200px;
-            }
-        `;
-        document.head.appendChild(style);
+        const style2 = document.createElement('style');
+        style2.textContent = `@keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } } .temp-marker { animation: pulse 1s infinite; } .leaflet-popup-content-wrapper { border-radius: 12px; } .leaflet-popup-content { margin: 0; min-width: 200px; } .custom-marker-wrapper div:hover { transform: scale(1.05); transition: 0.1s; }`;
+        document.head.appendChild(style2);
     </script>
 </body>
 </html>
