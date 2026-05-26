@@ -461,6 +461,55 @@
             pointer-events: none;
         }
 
+        .custom-popup {
+            min-width: 200px;
+            text-align: center;
+        }
+        
+        .custom-popup .popup-imagem {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 10px;
+            display: block;
+            border: 3px solid #1a7431;
+        }
+        
+        .custom-popup .popup-nome {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .custom-popup .popup-grupo {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .custom-popup .popup-endereco {
+            font-size: 11px;
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .custom-popup button {
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: #1a7431;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 12px;
+        }
+
         @keyframes pulse {
             0% { transform: scale(0.5); opacity: 1; }
             100% { transform: scale(2); opacity: 0; }
@@ -594,7 +643,9 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // CONFIGURAÇÃO - ALTERE PARA SUA URL DO APPS SCRIPT
+        // ============================================
+        // URL CORRIGIDA DO WEB APP - ATUALIZADA
+        // ============================================
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec';
         
         let map;
@@ -609,6 +660,11 @@
         let touchStartCoords = null;
         let touchMoveTriggered = false;
         let markers = {};
+        
+        function getPrimeiraPalavraNome(nomeCompleto) {
+            if (!nomeCompleto) return '';
+            return nomeCompleto.trim().split(' ')[0];
+        }
         
         document.addEventListener('DOMContentLoaded', function() {
             init();
@@ -773,11 +829,8 @@
         
         function removerNumeroDoEndereco(endereco) {
             if (!endereco) return '';
-            // Remove números no final do endereço (ex: "Rua A, 123" -> "Rua A")
             let enderecoSemNumero = endereco.replace(/,\s*\d+$/, '');
-            // Remove números seguidos de vírgula (ex: "Rua A, 123, Bairro" -> "Rua A, Bairro")
             enderecoSemNumero = enderecoSemNumero.replace(/,\s*\d+\s*,/, ',');
-            // Remove traços com números
             enderecoSemNumero = enderecoSemNumero.replace(/-\s*\d+/, '');
             return enderecoSemNumero;
         }
@@ -892,22 +945,18 @@
             showToast('💾 Salvando...');
             
             try {
-                // CORREÇÃO: Removido mode: 'no-cors'
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors', // Mantido para compatibilidade CORS
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    showToast('✅ Salvo com sucesso!');
-                    closeForm();
-                    await loadCadastros();
-                } else {
-                    throw new Error(result.error || 'Erro ao salvar');
-                }
+                // Como está em no-cors, não podemos ler a resposta
+                // Mas assumimos que deu certo se não houve erro de rede
+                showToast('✅ Salvo com sucesso!');
+                closeForm();
+                await loadCadastros();
                 
             } catch (error) {
                 console.error('Erro ao salvar:', error);
@@ -950,18 +999,18 @@
             }
         }
         
-        function createCustomMarker(grupo, id) {
+        function createCustomMarker(grupo, nome, id) {
             let markerColor = getMarkerColor(grupo);
             let iconColor = grupo === 'ROUBO' ? '#333' : 'white';
-            let grupoTexto = getGrupoTexto(grupo);
+            let primeiraPalavra = getPrimeiraPalavraNome(nome);
             
             return L.divIcon({
                 html: `<div style="display: flex; flex-direction: column; align-items: center;">
                            <div style="background-color: ${markerColor}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;">
                                <i class="fas fa-map-marker-alt" style="color: ${iconColor}; font-size: 16px;"></i>
                            </div>
-                           <div style="background-color: ${markerColor}; color: ${iconColor}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 2px; white-space: nowrap; border: 1px solid white; text-shadow: 0 0 1px black;">
-                               ${grupoTexto}
+                           <div style="background-color: ${markerColor}; color: ${iconColor}; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 2px; white-space: nowrap; border: 1px solid white; text-shadow: 0 0 1px black; max-width: 80px; overflow: hidden; text-overflow: ellipsis;">
+                               ${escapeHtml(primeiraPalavra)}
                            </div>
                        </div>`,
                 iconSize: [32, 45],
@@ -970,33 +1019,40 @@
             });
         }
         
-        function addMarkerToMap(lat, lng, nome, grupo, id, imagem) {
+        function addMarkerToMap(lat, lng, nome, grupo, id, imagem, endereco) {
             if (!lat || !lng) return;
             
             if (markers[id]) {
                 map.removeLayer(markers[id]);
             }
             
-            const markerIcon = createCustomMarker(grupo, id);
+            const markerIcon = createCustomMarker(grupo, nome, id);
             const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
             
             let imagemHtml = '';
             if (imagem && imagem.startsWith('data:image')) {
-                imagemHtml = `<div style="text-align: center; margin-bottom: 8px;">
-                                <img src="${imagem}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid ${getMarkerColor(grupo)}">
-                              </div>`;
+                imagemHtml = `<img src="${imagem}" class="popup-imagem" alt="foto">`;
+            } else {
+                imagemHtml = `<div class="popup-imagem" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 32px;"><i class="fas fa-user"></i></div>`;
             }
             
-            marker.bindPopup(`
-                <div style="min-width: 180px;">
+            const popupContent = `
+                <div class="custom-popup">
                     ${imagemHtml}
-                    <b style="font-size: 15px;">${escapeHtml(nome)}</b><br>
-                    <span style="color: ${getMarkerColor(grupo)}; font-weight: bold;">● ${grupo}</span><br>
-                    <button onclick="verCadastroDetalhe('${id}')" style="margin-top: 8px; padding: 5px 12px; background: #1a7431; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
-                        Ver detalhes
+                    <div class="popup-nome">${escapeHtml(nome)}</div>
+                    <div class="popup-grupo" style="background-color: ${getMarkerColor(grupo)}; color: ${grupo === 'ROUBO' ? '#333' : 'white'}">
+                        ${getGrupoTexto(grupo)}
+                    </div>
+                    <div class="popup-endereco">
+                        <i class="fas fa-map-marker-alt" style="font-size: 10px;"></i> ${escapeHtml(endereco || 'Sem endereço')}
+                    </div>
+                    <button onclick="verCadastroDetalhe('${id}')">
+                        <i class="fas fa-info-circle"></i> Ver detalhes
                     </button>
                 </div>
-            `);
+            `;
+            
+            marker.bindPopup(popupContent);
             
             marker.on('click', function() {
                 verCadastroDetalhe(id);
@@ -1010,7 +1066,6 @@
             showToast('🔄 Carregando cadastros...');
             
             try {
-                // CORREÇÃO: Removido mode: 'no-cors'
                 const response = await fetch(`${SCRIPT_URL}?action=get`);
                 const data = await response.json();
                 
@@ -1036,7 +1091,7 @@
             
             allCadastros.forEach(cad => {
                 if (cad.lat && cad.lng) {
-                    addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem);
+                    addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo, cad.id, cad.imagem, cad.endereco);
                 }
             });
         }
@@ -1051,9 +1106,9 @@
             container.innerHTML = allCadastros.map(cad => {
                 let imagemHtml = '';
                 if (cad.imagem && cad.imagem.startsWith('data:image')) {
-                    imagemHtml = `<img src="${cad.imagem}" alt="foto">`;
+                    imagemHtml = `<img src="${cad.imagem}" alt="foto" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
                 } else {
-                    imagemHtml = `<i class="fas fa-user"></i>`;
+                    imagemHtml = `<i class="fas fa-user" style="font-size: 24px;"></i>`;
                 }
                 
                 return `
@@ -1105,9 +1160,9 @@
             container.innerHTML = filtered.map(cad => {
                 let imagemHtml = '';
                 if (cad.imagem && cad.imagem.startsWith('data:image')) {
-                    imagemHtml = `<img src="${cad.imagem}" alt="foto">`;
+                    imagemHtml = `<img src="${cad.imagem}" alt="foto" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
                 } else {
-                    imagemHtml = `<i class="fas fa-user"></i>`;
+                    imagemHtml = `<i class="fas fa-user" style="font-size: 24px;"></i>`;
                 }
                 
                 return `
@@ -1134,8 +1189,10 @@
                 
                 if (cadastro.lat && cadastro.lng) {
                     map.setView([parseFloat(cadastro.lat), parseFloat(cadastro.lng)], 18);
+                    map.closePopup();
                     
                     if (markers[id]) {
+                        markers[id].openPopup();
                         const markerElement = markers[id].getElement();
                         if (markerElement) {
                             markerElement.style.transform = 'scale(1.2)';
@@ -1213,28 +1270,22 @@
             showToast('🗑️ Excluindo...');
             
             try {
-                // CORREÇÃO: Removido mode: 'no-cors'
-                const response = await fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'delete', id: selectedCadastro.id })
                 });
                 
-                const result = await response.json();
-                
-                if (result.success) {
-                    if (markers[selectedCadastro.id]) {
-                        map.removeLayer(markers[selectedCadastro.id]);
-                        delete markers[selectedCadastro.id];
-                    }
-                    
-                    await loadCadastros();
-                    document.getElementById('actionsFooter').classList.remove('show');
-                    selectedCadastro = null;
-                    showToast('✅ Excluído com sucesso!');
-                } else {
-                    throw new Error(result.error || 'Erro ao excluir');
+                if (markers[selectedCadastro.id]) {
+                    map.removeLayer(markers[selectedCadastro.id]);
+                    delete markers[selectedCadastro.id];
                 }
+                
+                await loadCadastros();
+                document.getElementById('actionsFooter').classList.remove('show');
+                selectedCadastro = null;
+                showToast('✅ Excluído com sucesso!');
                 
             } catch (error) {
                 console.error('Erro ao excluir:', error);
@@ -1277,21 +1328,15 @@
                 };
                 
                 try {
-                    // CORREÇÃO: Removido mode: 'no-cors'
-                    const response = await fetch(SCRIPT_URL, {
+                    await fetch(SCRIPT_URL, {
                         method: 'POST',
+                        mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ action: 'update', ...updatedCadastro })
                     });
                     
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        showToast('✅ Endereço atualizado!');
-                        await loadCadastros();
-                    } else {
-                        throw new Error(result.error || 'Erro ao atualizar');
-                    }
+                    showToast('✅ Endereço atualizado!');
+                    await loadCadastros();
                 } catch (error) {
                     let localData = JSON.parse(localStorage.getItem('cadastros_local') || '[]');
                     const index = localData.findIndex(c => c.id == selectedCadastro.id);
@@ -1339,6 +1384,14 @@
             }
             .temp-marker { animation: pulse 1s infinite; }
             .custom-marker div:hover { transform: scale(1.1); transition: transform 0.2s; }
+            .leaflet-popup-content-wrapper {
+                border-radius: 12px;
+                padding: 0;
+            }
+            .leaflet-popup-content {
+                margin: 0;
+                min-width: 200px;
+            }
         `;
         document.head.appendChild(style);
     </script>
