@@ -462,8 +462,9 @@
         }
 
         .custom-popup {
-            min-width: 200px;
+            min-width: 220px;
             text-align: center;
+            padding: 5px;
         }
         
         .custom-popup .popup-imagem {
@@ -474,6 +475,7 @@
             margin: 0 auto 10px;
             display: block;
             border: 3px solid #1a7431;
+            background: #f0f0f0;
         }
         
         .custom-popup .popup-nome {
@@ -496,6 +498,7 @@
             font-size: 11px;
             color: #666;
             margin: 5px 0;
+            word-break: break-word;
         }
         
         .custom-popup button {
@@ -662,8 +665,8 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // URL do Google Apps Script
-        const SCRIPT_URL = ‘https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec’;
+        // URL do Google Apps Script - CORRIGIDA (aspas simples padrão)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec';
         
         let map;
         let longPressTimeout = null;
@@ -690,12 +693,8 @@
         });
         
         function init() {
-            map = L.map('map', {
-                tap: true,
-                touchZoom: true,
-                dragging: true,
-                tapTolerance: 10
-            }).setView([-11.720739, -62.315405], 18);
+            // Coordenadas centrais de Nova Brasilândia D'Oeste
+            map = L.map('map').setView([-11.720739, -62.315405], 18);
             
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 attribution: '&copy; Google',
@@ -719,7 +718,6 @@
         }
         
         function onTouchStart(e) {
-            e.preventDefault();
             const touch = e.touches[0];
             const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
             touchStartCoords = { x: touch.clientX, y: touch.clientY };
@@ -967,6 +965,8 @@
             
             const markerIcon = createCustomMarker(grupo, nome, id);
             const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
+            
+            // Conteúdo do popup com imagem e nome
             let imagemHtml = (imagem && imagem.startsWith('data:image')) 
                 ? `<img src="${imagem}" class="popup-imagem" alt="foto">`
                 : `<div class="popup-imagem" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 32px;"><i class="fas fa-user"></i></div>`;
@@ -983,7 +983,12 @@
                 </div>
             `;
             marker.bindPopup(popupContent);
-            marker.on('click', () => verCadastroDetalhe(id));
+            
+            // Evento de clique no marcador para abrir o popup automaticamente
+            marker.on('click', function() {
+                this.openPopup();
+            });
+            
             markers[id] = marker;
             return marker;
         }
@@ -1231,7 +1236,7 @@
         window.openCadastrosPanel = openCadastrosPanel;
         
         const style2 = document.createElement('style');
-        style2.textContent = `@keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } } .temp-marker { animation: pulse 1s infinite; } .leaflet-popup-content-wrapper { border-radius: 12px; } .leaflet-popup-content { margin: 0; min-width: 200px; } .custom-marker-wrapper div:hover { transform: scale(1.05); transition: 0.1s; }`;
+        style2.textContent = `@keyframes pulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2); opacity: 0; } } .temp-marker { animation: pulse 1s infinite; } .leaflet-popup-content-wrapper { border-radius: 12px; } .leaflet-popup-content { margin: 0; min-width: 220px; } .custom-marker-wrapper div:hover { transform: scale(1.05); transition: 0.1s; }`;
         document.head.appendChild(style2);
     </script>
 </body>
