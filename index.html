@@ -1387,7 +1387,7 @@ location.reload();
             loadCadastros();
         }
         
-        function irAoLocal() {
+function irAoLocal() {
     if (!selectedCadastro) {
         showToast('Selecione um cadastro');
         return;
@@ -1403,12 +1403,23 @@ location.reload();
 
     showToast('Obtendo sua localização...');
 
+    // Função auxiliar para abrir o mapa tratando o ecossistema Mobile
+    function abrirMapa(url) {
+        // Em apps hospedados e WebViews, window.location.href é muito mais
+        // estável para disparar aplicativos nativos do que window.open()
+        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            window.location.href = url;
+        } else {
+            window.open(url, '_blank');
+        }
+    }
+
     // Se o navegador não suportar geolocalização, vai direto para o destino
     if (!navigator.geolocation) {
         showToast('Seu navegador não suporta geolocalização');
-        // Usa o padrão de busca/ponto do Maps API
+        // URL de busca padrão (Apenas o marcador do destino)
         const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-        window.open(fallbackUrl, '_blank');
+        abrirMapa(fallbackUrl);
         return;
     }
 
@@ -1416,13 +1427,14 @@ location.reload();
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const origemLat = position.coords.latitude;
-            const origenLng = position.coords.longitude;
+            const origemLng = position.coords.longitude;
             
-            // Padrão oficial de rotas (Directions) do Google Maps URL Universal
-            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origenLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
+            // URL de Direções Oficial do Google Maps (Universal Link)
+            // Este formato evita que o Google gere intents corrompidos
+            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
             
             showToast('Abrindo navegação...');
-            window.open(urlGoogleMaps, '_blank');
+            abrirMapa(urlGoogleMaps);
         },
         function(error) {
             console.error('Erro de geolocalização:', error);
@@ -1443,9 +1455,9 @@ location.reload();
             }
             showToast(mensagemErro);
             
-            // Fallback caso a geolocalização falhe (abre apenas o marcador de destino)
+            // Fallback caso a geolocalização falhe (mostra o destino)
             const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-            window.open(fallbackUrl, '_blank');
+            abrirMapa(fallbackUrl);
         },
         {
             enableHighAccuracy: true,
