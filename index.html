@@ -300,6 +300,15 @@
             border-bottom: 1px solid #eee;
         }
 
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
         .search-row {
             display: flex;
             gap: 8px;
@@ -307,27 +316,7 @@
 
         .search-row input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .search-row button {
-            padding: 10px 15px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .search-box small {
-            display: block;
-            margin-top: 5px;
-            color: #666;
-            font-size: 11px;
+            margin-bottom: 0;
         }
 
         .cadastros-list {
@@ -406,38 +395,46 @@
         .grupo-OUTRO { background: #607d8b; color: white; }
 
         .actions-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #ddd;
-            padding: 12px;
-            display: none;
-            gap: 10px;
-            z-index: 1600;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    background: white;
+
+    border-top: 1px solid #ddd;
+
+    padding: 12px;
+
+    display: none;
+
+    gap: 10px;
+
+    z-index: 1600;
+
+    justify-content:center;
+
+    flex-wrap:wrap;
+}
         .actions-footer.show {
             display: flex;
         }
 
         .action-btn {
-            padding: 10px 18px;
-            border: none;
-            border-radius: 6px;
-            font-size: 11px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            font-weight: 600;
-            flex: unset;
-            min-width: 110px;
-        }
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-weight: 600;
+
+    flex: unset;
+    min-width: 110px;
+}
 
         .action-whatsapp { background: #25D366; color: white; }
         .action-edit { background: #2196F3; color: white; }
@@ -564,82 +561,135 @@
                 font-size: 20px;
             }
         }
+    .login-screen{
 
-        .login-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0d4d1f;
-            z-index: 99999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+position:fixed;
 
-        .login-box {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 350px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+top:0;
 
-        .login-box input {
-            padding: 12px;
-            font-size: 16px;
-        }
+left:0;
 
-        .login-box button {
-            padding: 12px;
-            background: #1a7431;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-        }
+width:100%;
 
-        #loginErro {
-            color: red;
-            font-size: 14px;
-            text-align: center;
-        }
+height:100%;
 
-        mark {
-            background: #ffeb3b;
-            padding: 0 2px;
-            border-radius: 3px;
-        }
-    </style>
+background:#0d4d1f;
+
+z-index:99999;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+}
+
+.login-box{
+
+background:white;
+
+padding:30px;
+
+border-radius:12px;
+
+width:90%;
+
+max-width:350px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:15px;
+
+}
+
+.login-box input{
+
+padding:12px;
+
+font-size:16px;
+
+}
+
+.login-box button{
+
+padding:12px;
+
+background:#1a7431;
+
+color:white;
+
+border:none;
+
+border-radius:6px;
+
+font-weight:bold;
+
+}
+
+#loginErro{
+
+color:red;
+
+font-size:14px;
+
+text-align:center;
+
+}
+</style>
 </head>
 <body>
-    <div id="loginScreen" class="login-screen">
-        <div class="login-box">
-            <h2>MAPA DO CRIME - NBO</h2>
-            <input type="text" id="loginUsuario" placeholder="Usuário">
-            <input type="password" id="loginSenha" placeholder="Senha">
-            <button onclick="fazerLogin()">Entrar</button>
-            <p id="loginErro"></p>
-        </div>
-    </div>
-    
-    <div id="map"></div>
+  <div id="loginScreen" class="login-screen">
+
+<div class="login-box">
+
+<h2>MAPA DO CRIME - NBO</h2>
+
+<input
+type="text"
+id="loginUsuario"
+placeholder="Usuário">
+
+<input
+type="password"
+id="loginSenha"
+placeholder="Senha">
+
+<button onclick="fazerLogin()">
+
+Entrar
+
+</button>
+
+<p id="loginErro"></p>
+
+</div>
+
+</div>  
+<div id="map"></div>
     
     <div class="app-header">
         <div class="header-top">
-            <div>
-                <button onclick="alterarSenha()" style="margin-right:35px;">
-                    <i class="fas fa-key"></i>
-                </button>
-                <button onclick="sair()">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-            <div class="logo-area">
+          <div>
+
+<button
+onclick="alterarSenha()"
+style="margin-right:35px;">
+
+<i class="fas fa-key"></i>
+
+</button>
+
+<button onclick="sair()">
+
+<i class="fas fa-sign-out-alt"></i>
+
+</button>
+
+</div>
+  <div class="logo-area">
                 <div class="logo-icon">
                     <i class="fas fa-map-marker-alt"></i>
                 </div>
@@ -723,15 +773,12 @@
             <i class="fas fa-arrow-left"></i> Voltar para o Mapa
         </button>
         <div class="search-box">
+            <input type="text" id="searchNome" placeholder="Buscar por Nome..." onkeyup="filterCadastros()">
+            <input type="text" id="searchCpf" placeholder="Buscar por CPF..." onkeyup="filterCadastros()">
             <div class="search-row">
-                <input type="text" id="searchGlobal" placeholder="🔍 Buscar em todos os campos (Nome, CPF, Endereço, Número, Contato, Grupo, Obs)..." onkeyup="filterCadastros()">
-                <button onclick="limparBusca()">
-                    <i class="fas fa-times"></i> Limpar
-                </button>
+                <input type="text" id="searchEndereco" placeholder="Buscar por Rua/Avenida..." onkeyup="filterCadastros()">
+                <input type="text" id="searchNumero" placeholder="Nº" onkeyup="filterCadastros()" style="width: 70px;">
             </div>
-            <small>
-                <i class="fas fa-info-circle"></i> Digite qualquer termo para buscar em todos os cadastros
-            </small>
         </div>
         <div class="cadastros-list" id="cadastrosList">
             <div style="text-align: center; padding: 20px;">Carregando...</div>
@@ -739,9 +786,14 @@
     </div>
 
     <div class="actions-footer" id="actionsFooter">
-        <button class="action-btn action-whatsapp" onclick="irAoLocal()">
-            <i class="fas fa-route"></i> Ir ao Local
-        </button>
+        <button class="action-btn action-whatsapp"
+onclick="irAoLocal()">
+
+<i class="fas fa-route"></i>
+
+Ir ao Local
+
+</button>
         <button class="action-btn action-edit" onclick="editCadastro()"><i class="fas fa-edit"></i> Editar</button>
         <button class="action-btn action-delete" onclick="confirmDeleteCadastro()"><i class="fas fa-trash"></i> Excluir</button>
         <button class="action-btn action-change-address" onclick="changeAddressMode()"><i class="fas fa-map-marker-alt"></i> Alterar Endereço</button>
@@ -752,6 +804,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // URL do Google Apps Script - CORRIGIDA (aspas simples padrão)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxogPUhykcuBXytN4328xBFJu3KZX57EZqmMQXTsnUMvpfMVtzUbgYuCiudflbLuQ6Q/exec';
         
         let map;
@@ -763,62 +816,145 @@
         let selectedCadastro = null;
         let currentEditingId = null;
         let markers = {};
-        let usuarioLogado = null;
-        let admin = false;
+        let usuarioLogado=null;
 
+let admin=false;
         function getPrimeiraPalavraNome(nomeCompleto) {
             if (!nomeCompleto) return '?';
             return nomeCompleto.trim().split(' ')[0];
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('btnLocaisSalvos').addEventListener('click', openCadastrosPanel);
-            verificarSessao();
-        });
+        document.addEventListener('DOMContentLoaded', function(){
 
-        async function fazerLogin() {
-            const usuario = document.getElementById('loginUsuario').value.trim();
-            const senha = document.getElementById('loginSenha').value.trim();
+document.getElementById('btnLocaisSalvos')
+.addEventListener(
+'click',
+openCadastrosPanel
+);
 
-            if (!usuario || !senha) {
-                document.getElementById('loginErro').innerText = 'Preencha usuário e senha';
-                return;
-            }
+verificarSessao();
 
-            try {
-                const response = await fetch(SCRIPT_URL + '?action=login&usuario=' + encodeURIComponent(usuario) + '&senha=' + encodeURIComponent(senha));
-                const data = await response.json();
+});
+     async function fazerLogin(){
 
-                if (data.success) {
-                    usuarioLogado = usuario;
-                    admin = data.admin;
-                    localStorage.setItem('usuarioLogado', JSON.stringify({ usuario, admin }));
-                    document.getElementById('loginScreen').style.display = 'none';
-                    init();
-                } else {
-                    document.getElementById('loginErro').innerText = 'Login inválido';
-                }
-            } catch(e) {
-                document.getElementById('loginErro').innerText = 'Erro login';
-            }
-        }
+const usuario=
+document.getElementById(
+'loginUsuario'
+).value.trim();
 
-        function verificarSessao() {
-            const s = localStorage.getItem('usuarioLogado');
-            if (!s) return;
-            const dados = JSON.parse(s);
-            usuarioLogado = dados.usuario;
-            admin = dados.admin;
-            document.getElementById('loginScreen').style.display = 'none';
-            init();
-        }
+const senha=
+document.getElementById(
+'loginSenha'
+).value.trim();
 
-        function sair() {
-            localStorage.removeItem('usuarioLogado');
-            location.reload();
-        }
+if(!usuario||!senha){
 
+document.getElementById(
+'loginErro'
+).innerText=
+'Preencha usuário e senha';
+
+return;
+
+}
+
+try{
+
+const response=
+await fetch(
+SCRIPT_URL+
+'?action=login'+
+'&usuario='+
+encodeURIComponent(usuario)+
+'&senha='+
+encodeURIComponent(senha)
+);
+
+const data=
+await response.json();
+
+if(data.success){
+
+usuarioLogado=usuario;
+
+admin=data.admin;
+
+localStorage.setItem(
+'usuarioLogado',
+JSON.stringify({
+usuario,
+admin
+})
+);
+
+document.getElementById(
+'loginScreen'
+).style.display='none';
+
+init();
+
+}
+else{
+
+document.getElementById(
+'loginErro'
+).innerText=
+'Login inválido';
+
+}
+
+}catch(e){
+
+document.getElementById(
+'loginErro'
+).innerText=
+'Erro login';
+
+}
+
+}
+
+
+
+function verificarSessao(){
+
+const s=
+localStorage.getItem(
+'usuarioLogado'
+);
+
+if(!s)return;
+
+const dados=
+JSON.parse(s);
+
+usuarioLogado=
+dados.usuario;
+
+admin=
+dados.admin;
+
+document.getElementById(
+'loginScreen'
+).style.display='none';
+
+init();
+
+}
+
+
+
+function sair(){
+
+localStorage.removeItem(
+'usuarioLogado'
+);
+
+location.reload();
+
+}   
         function init() {
+            // Coordenadas centrais de Nova Brasilândia D'Oeste
             map = L.map('map').setView([-11.720739, -62.315405], 18);
             
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
@@ -1091,6 +1227,7 @@
             const markerIcon = createCustomMarker(grupo, nome, id);
             const marker = L.marker([parseFloat(lat), parseFloat(lng)], { icon: markerIcon }).addTo(map);
             
+            // Conteúdo do popup com imagem e nome
             let imagemHtml = (imagem && imagem.startsWith('data:image')) 
                 ? `<img src="${imagem}" class="popup-imagem" alt="foto">`
                 : `<div class="popup-imagem" style="background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 32px;"><i class="fas fa-user"></i></div>`;
@@ -1108,6 +1245,7 @@
             `;
             marker.bindPopup(popupContent);
             
+            // Evento de clique no marcador para abrir o popup automaticamente
             marker.on('click', function() {
                 this.openPopup();
             });
@@ -1157,35 +1295,54 @@
             }
         }
         
-        function filterCadastros() {
-            const searchTerm = document.getElementById('searchGlobal').value.toLowerCase().trim();
-            
-            let filtered = allCadastros;
-            
-            if (searchTerm !== '') {
-                filtered = allCadastros.filter(cad => {
-                    const campos = [
-                        cad.nome,
-                        cad.cpf,
-                        cad.endereco,
-                        cad.numero,
-                        cad.contato,
-                        cad.grupo,
-                        cad.nota,
-                        cad.id
-                    ];
-                    
-                    return campos.some(campo => {
-                        if (!campo) return false;
-                        return String(campo).toLowerCase().includes(searchTerm);
-                    });
-                });
+        function renderCadastrosList() {
+            const container = document.getElementById('cadastrosList');
+            if (!allCadastros || allCadastros.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px;">Nenhum cadastro encontrado</div>';
+                return;
             }
             
-            const container = document.getElementById('cadastrosList');
+            container.innerHTML = allCadastros.map(cad => {
+                let imagemHtml = (cad.imagem && cad.imagem.startsWith('data:image')) 
+                    ? `<img src="${cad.imagem}" alt="foto" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
+                    : `<i class="fas fa-user" style="font-size: 24px;"></i>`;
+                
+                return `
+                <div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
+                    <div class="cadastro-imagem">${imagemHtml}</div>
+                    <div class="cadastro-info">
+                        <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                        <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
+                        <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
+                        <p><i class="fas fa-phone"></i> Contato: ${cad.contato || 'Não informado'}</p>
+                        <span class="grupo-badge grupo-${cad.grupo || 'OUTRO'}">${cad.grupo || 'OUTRO'}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        function getIconForGrupo(grupo) {
+            const icons = { 'DROGAS': 'fa-capsules', 'ROUBO': 'fa-gavel', 'HOMICÍDIO': 'fa-skull', 'OUTRO': 'fa-tag' };
+            return icons[grupo] || 'fa-map-marker';
+        }
+        
+        function filterCadastros() {
+            const searchNome = document.getElementById('searchNome').value.toLowerCase();
+            const searchCpf = document.getElementById('searchCpf').value.toLowerCase();
+            const searchEndereco = document.getElementById('searchEndereco').value.toLowerCase();
+            const searchNumero = document.getElementById('searchNumero').value.toLowerCase();
             
+            const filtered = allCadastros.filter(cad => {
+                if (searchNome && !cad.nome.toLowerCase().includes(searchNome)) return false;
+                if (searchCpf && !(cad.cpf || '').toLowerCase().includes(searchCpf)) return false;
+                if (searchEndereco && !(cad.endereco || '').toLowerCase().includes(searchEndereco)) return false;
+                if (searchNumero && !(cad.numero || '').toLowerCase().includes(searchNumero) && !(cad.endereco || '').toLowerCase().includes(searchNumero)) return false;
+                return true;
+            });
+            
+            const container = document.getElementById('cadastrosList');
             if (!filtered.length) { 
-                container.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-search"></i><br>Nenhum resultado encontrado para "' + escapeHtml(searchTerm) + '"</div>'; 
+                container.innerHTML = '<div style="text-align:center;padding:20px;">Nenhum resultado encontrado</div>'; 
                 return; 
             }
             
@@ -1193,47 +1350,16 @@
                 let imagemHtml = (cad.imagem && cad.imagem.startsWith('data:image')) 
                     ? `<img src="${cad.imagem}" alt="foto" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                     : `<i class="fas fa-user" style="font-size: 24px;"></i>`;
-                
-                let nomeDestacado = cad.nome;
-                let enderecoDestacado = cad.endereco || 'Sem endereço';
-                let cpfDestacado = cad.cpf || 'Não informado';
-                let contatoDestacado = cad.contato || 'Não informado';
-                
-                if (searchTerm !== '') {
-                    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                    nomeDestacado = cad.nome ? cad.nome.replace(regex, '<mark>$1</mark>') : cad.nome;
-                    enderecoDestacado = (cad.endereco || 'Sem endereço').replace(regex, '<mark>$1</mark>');
-                    cpfDestacado = (cad.cpf || 'Não informado').replace(regex, '<mark>$1</mark>');
-                    contatoDestacado = (cad.contato || 'Não informado').replace(regex, '<mark>$1</mark>');
-                }
-                
                 return `<div class="cadastro-item" onclick="verCadastroDetalhe('${cad.id}')">
                     <div class="cadastro-imagem">${imagemHtml}</div>
                     <div class="cadastro-info">
-                        <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${nomeDestacado}</h4>
-                        <p><i class="fas fa-id-card"></i> CPF: ${cpfDestacado}</p>
-                        <p><i class="fas fa-map-pin"></i> ${enderecoDestacado}</p>
-                        <p><i class="fas fa-phone"></i> Contato: ${contatoDestacado}</p>
-                        ${cad.nota ? `<p><i class="fas fa-comment"></i> Obs: ${cad.nota.substring(0, 50)}${cad.nota.length > 50 ? '...' : ''}</p>` : ''}
+                        <h4><i class="fas ${getIconForGrupo(cad.grupo)}"></i> ${escapeHtml(cad.nome)}</h4>
+                        <p><i class="fas fa-id-card"></i> CPF: ${cad.cpf || 'Não informado'}</p>
+                        <p><i class="fas fa-map-pin"></i> ${escapeHtml(cad.endereco || 'Sem endereço')}</p>
                         <span class="grupo-badge grupo-${cad.grupo || 'OUTRO'}">${cad.grupo || 'OUTRO'}</span>
                     </div>
                 </div>`;
             }).join('');
-        }
-        
-        function limparBusca() {
-            document.getElementById('searchGlobal').value = '';
-            filterCadastros();
-            showToast('🔍 Busca limpa');
-        }
-        
-        function renderCadastrosList() {
-            filterCadastros();
-        }
-        
-        function getIconForGrupo(grupo) {
-            const icons = { 'DROGAS': 'fa-capsules', 'ROUBO': 'fa-gavel', 'HOMICÍDIO': 'fa-skull', 'OUTRO': 'fa-tag' };
-            return icons[grupo] || 'fa-map-marker';
         }
         
         function verCadastroDetalhe(id) {
@@ -1272,77 +1398,63 @@
         return;
     }
 
-    const destinoLat = parseFloat(selectedCadastro.lat);
-    const destinoLng = parseFloat(selectedCadastro.lng);
+    const destinoLat = selectedCadastro.lat;
+    const destinoLng = selectedCadastro.lng;
 
-    showToast('Obtendo localização...');
+    showToast('Obtendo sua localização...');
 
-    function abrirMapa(url){
-        try{
-
-            // Android / WebView / SPCK / PWA
-            window.location.href = url;
-
-            // fallback extra
-            setTimeout(()=>{
-                try{
-                    window.open(url,'_self');
-                }catch(e){}
-            },500);
-
-        }catch(e){
-            location.assign(url);
-        }
-    }
-
+    // Verifica se o navegador suporta geolocalização
     if (!navigator.geolocation) {
-
-        const url =
-        `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-        abrirMapa(url);
-
+        showToast('Seu navegador não suporta geolocalização');
+        // Fallback: abre apenas o destino
+        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+        window.open(fallbackUrl, '_blank');
         return;
     }
 
+    // Obtém a localização atual do usuário
     navigator.geolocation.getCurrentPosition(
-
-        function(position){
-
+        function(position) {
             const origemLat = position.coords.latitude;
             const origemLng = position.coords.longitude;
-
-            const url =
-            `https://www.google.com/maps/dir/?api=1`+
-            `&origin=${origemLat},${origemLng}`+
-            `&destination=${destinoLat},${destinoLng}`+
-            `&travelmode=driving`;
-
+            
+            // Monta URL completa com origem e destino
+            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
+            
             showToast('Abrindo navegação...');
-
-            abrirMapa(url);
-
+            window.open(urlGoogleMaps, '_blank');
         },
-
-        function(){
-
-            showToast('Abrindo destino...');
-
-            const url =
-            `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-            abrirMapa(url);
-
+        function(error) {
+            // Erro ao obter localização
+            console.error('Erro de geolocalização:', error);
+            
+            let mensagemErro = 'Não foi possível obter sua localização. ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    mensagemErro += 'Permissão negada. Habilite a localização.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    mensagemErro += 'Localização indisponível.';
+                    break;
+                case error.TIMEOUT:
+                    mensagemErro += 'Tempo esgotado.';
+                    break;
+                default:
+                    mensagemErro += 'Tente novamente.';
+            }
+            showToast(mensagemErro);
+            
+            // Fallback: abre apenas o destino
+            const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+            window.open(fallbackUrl, '_blank');
         },
-
         {
-            enableHighAccuracy:true,
-            timeout:10000,
-            maximumAge:0
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
         }
-
     );
-}        
+}
         function editCadastro() {
             if(!selectedCadastro) return;
             let numero = '';
@@ -1435,27 +1547,47 @@
             div.textContent = text; 
             return div.innerHTML; 
         }
-        
-        async function alterarSenha() {
-            const nova = prompt('Nova senha');
-            if(!nova) return;
-            await fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    action: 'alterarSenha',
-                    usuario: usuarioLogado,
-                    senha: nova
-                })
-            });
-            showToast('Senha alterada');
-        }
-        
+        async function alterarSenha(){
+
+const nova=
+prompt(
+'Nova senha'
+);
+
+if(!nova)return;
+
+await fetch(
+SCRIPT_URL,
+{
+
+method:'POST',
+
+mode:'no-cors',
+
+body:JSON.stringify({
+
+action:'alterarSenha',
+
+usuario:usuarioLogado,
+
+senha:nova
+
+})
+
+}
+
+);
+
+showToast(
+'Senha alterada'
+);
+
+}
         window.verCadastroDetalhe = verCadastroDetalhe;
         window.closeCadastrosPanel = closeCadastrosPanel;
         window.filterCadastros = filterCadastros;
-        window.limparBusca = limparBusca;
-        window.irAoLocal = irAoLocal;
+        window.irAoLocal =
+irAoLocal;
         window.editCadastro = editCadastro;
         window.confirmDeleteCadastro = confirmDeleteCadastro;
         window.changeAddressMode = changeAddressMode;
