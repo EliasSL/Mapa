@@ -1401,64 +1401,35 @@ function irAoLocal() {
     const destinoLat = parseFloat(selectedCadastro.lat);
     const destinoLng = parseFloat(selectedCadastro.lng);
 
-    showToast('Abrindo mapa...');
+    showToast('Abrindo Google Maps...');
 
-    // Função simples e garantida para abrir o mapa
-    function abrirMapa(url) {
-        // Método mais confiável: criar um link temporário e clicar
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        
-        // Para dispositivos móveis, tentar diferentes abordagens
-        if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-            // No Android, tentar primeiro com window.location
-            try {
-                window.location.href = url;
-            } catch(e) {
-                // Se falhar, tentar com o link
-                link.click();
+    // URL padrão do Google Maps (sem intent, sem complicações)
+    let url = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+    // Tenta obter localização para rota (opcional, se falhar usa só o destino)
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const origemLat = position.coords.latitude;
+                const origemLng = position.coords.longitude;
+                // URL com rota
+                const urlComRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/`;
+                window.open(urlComRota, '_blank');
+            },
+            function() {
+                // Fallback: só o destino
+                window.open(url, '_blank');
+            },
+            {
+                enableHighAccuracy: false, // Mais rápido
+                timeout: 3000,
+                maximumAge: 30000
             }
-        } else {
-            // Desktop: abrir nova aba
-            link.click();
-        }
+        );
+    } else {
+        // Sem geolocalização, abre só o destino
+        window.open(url, '_blank');
     }
-
-    // URL básica do destino (sempre funciona)
-    const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-    // Verifica se tem geolocalização
-    if (!navigator.geolocation) {
-        abrirMapa(urlDestino);
-        return;
-    }
-
-    // Tenta obter localização atual para rota
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const origemLat = position.coords.latitude;
-            const origemLng = position.coords.longitude;
-            
-            // URL com rota a partir da localização atual
-            const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/`;
-            
-            showToast('Abrindo navegação...');
-            abrirMapa(urlRota);
-        },
-        function(error) {
-            // Falha ao obter localização - abre apenas o destino
-            console.error('Erro geolocalização:', error);
-            showToast('Abrindo destino no mapa...');
-            abrirMapa(urlDestino);
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 5000,  // Timeout menor para não demorar
-            maximumAge: 30000  // Aceita localização com até 30 segundos
-        }
-    );
 }
         function editCadastro() {
             if(!selectedCadastro) return;
