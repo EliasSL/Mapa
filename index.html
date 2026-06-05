@@ -1406,7 +1406,7 @@ location.reload();
     // Verifica se o navegador suporta geolocalização
     if (!navigator.geolocation) {
         showToast('Seu navegador não suporta geolocalização');
-        // Fallback: abre apenas o destino
+        // Fallback corrigido: Abre o ponto de destino diretamente
         const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
         window.open(fallbackUrl, '_blank');
         return;
@@ -1418,14 +1418,13 @@ location.reload();
             const origemLat = position.coords.latitude;
             const origemLng = position.coords.longitude;
             
-            // Monta URL completa com origem e destino
+            // URL Universal corrigida com a sintaxe ${} correta e protocolo seguro HTTPS
             const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
             
             showToast('Abrindo navegação...');
             window.open(urlGoogleMaps, '_blank');
         },
         function(error) {
-            // Erro ao obter localização
             console.error('Erro de geolocalização:', error);
             
             let mensagemErro = 'Não foi possível obter sua localização. ';
@@ -1444,7 +1443,7 @@ location.reload();
             }
             showToast(mensagemErro);
             
-            // Fallback: abre apenas o destino
+            // Fallback corrigido no erro de geolocalização
             const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
             window.open(fallbackUrl, '_blank');
         },
