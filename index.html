@@ -1398,71 +1398,65 @@ function irAoLocal() {
         return;
     }
 
-    const destinoLat = selectedCadastro.lat;
-    const destinoLng = selectedCadastro.lng;
+    const destinoLat = parseFloat(selectedCadastro.lat);
+    const destinoLng = parseFloat(selectedCadastro.lng);
 
-    showToast('Obtendo sua localização...');
+    showToast('Abrindo mapa...');
 
-    // Função auxiliar para abrir o mapa tratando o ecossistema Mobile
+    // Função simples e garantida para abrir o mapa
     function abrirMapa(url) {
-        // Em apps hospedados e WebViews, window.location.href é muito mais
-        // estável para disparar aplicativos nativos do que window.open()
-        if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            window.location.href = url;
+        // Método mais confiável: criar um link temporário e clicar
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        
+        // Para dispositivos móveis, tentar diferentes abordagens
+        if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
+            // No Android, tentar primeiro com window.location
+            try {
+                window.location.href = url;
+            } catch(e) {
+                // Se falhar, tentar com o link
+                link.click();
+            }
         } else {
-            window.open(url, '_blank');
+            // Desktop: abrir nova aba
+            link.click();
         }
     }
 
-    // Se o navegador não suportar geolocalização, vai direto para o destino
+    // URL básica do destino (sempre funciona)
+    const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+    // Verifica se tem geolocalização
     if (!navigator.geolocation) {
-        showToast('Seu navegador não suporta geolocalização');
-        // URL de busca padrão (Apenas o marcador do destino)
-        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-        abrirMapa(fallbackUrl);
+        abrirMapa(urlDestino);
         return;
     }
 
-    // Obtém a localização atual do usuário
+    // Tenta obter localização atual para rota
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const origemLat = position.coords.latitude;
             const origemLng = position.coords.longitude;
             
-            // URL de Direções Oficial do Google Maps (Universal Link)
-            // Este formato evita que o Google gere intents corrompidos
-            const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
+            // URL com rota a partir da localização atual
+            const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/`;
             
             showToast('Abrindo navegação...');
-            abrirMapa(urlGoogleMaps);
+            abrirMapa(urlRota);
         },
         function(error) {
-            console.error('Erro de geolocalização:', error);
-            
-            let mensagemErro = 'Não foi possível obter sua localização. ';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    mensagemErro += 'Permissão negada. Habilite a localização.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensagemErro += 'Localização indisponível.';
-                    break;
-                case error.TIMEOUT:
-                    mensagemErro += 'Tempo esgotado.';
-                    break;
-                default:
-                    mensagemErro += 'Tente novamente.';
-            }
-            showToast(mensagemErro);
-            
-            // Fallback caso a geolocalização falhe (mostra o destino)
-            const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-            abrirMapa(fallbackUrl);
+            // Falha ao obter localização - abre apenas o destino
+            console.error('Erro geolocalização:', error);
+            showToast('Abrindo destino no mapa...');
+            abrirMapa(urlDestino);
         },
         {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+            timeout: 5000,  // Timeout menor para não demorar
+            maximumAge: 30000  // Aceita localização com até 30 segundos
         }
     );
 }
