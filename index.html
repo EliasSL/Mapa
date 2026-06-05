@@ -1262,68 +1262,87 @@
         }
         
         function irAoLocal() {
-            if (!selectedCadastro) {
-                showToast('Selecione um cadastro');
-                return;
-            }
+    if (!selectedCadastro) {
+        showToast('Selecione um cadastro');
+        return;
+    }
 
-            if (!selectedCadastro.lat || !selectedCadastro.lng) {
-                showToast('Local inválido');
-                return;
-            }
+    if (!selectedCadastro.lat || !selectedCadastro.lng) {
+        showToast('Local inválido');
+        return;
+    }
 
-            const destinoLat = selectedCadastro.lat;
-            const destinoLng = selectedCadastro.lng;
+    const destinoLat = parseFloat(selectedCadastro.lat);
+    const destinoLng = parseFloat(selectedCadastro.lng);
 
-            showToast('Obtendo sua localização...');
+    showToast('Obtendo localização...');
 
-            if (!navigator.geolocation) {
-                showToast('Seu navegador não suporta geolocalização');
-                const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                window.open(fallbackUrl, '_blank');
-                return;
-            }
+    function abrirMapa(url){
+        try{
 
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const origemLat = position.coords.latitude;
-                    const origemLng = position.coords.longitude;
-                    
-                    const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
-                    
-                    showToast('Abrindo navegação...');
-                    window.open(urlGoogleMaps, '_blank');
-                },
-                function(error) {
-                    console.error('Erro de geolocalização:', error);
-                    
-                    let mensagemErro = 'Não foi possível obter sua localização. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            mensagemErro += 'Permissão negada. Habilite a localização.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            mensagemErro += 'Localização indisponível.';
-                            break;
-                        case error.TIMEOUT:
-                            mensagemErro += 'Tempo esgotado.';
-                            break;
-                        default:
-                            mensagemErro += 'Tente novamente.';
-                    }
-                    showToast(mensagemErro);
-                    
-                    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                    window.open(fallbackUrl, '_blank');
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                }
-            );
+            // Android / WebView / SPCK / PWA
+            window.location.href = url;
+
+            // fallback extra
+            setTimeout(()=>{
+                try{
+                    window.open(url,'_self');
+                }catch(e){}
+            },500);
+
+        }catch(e){
+            location.assign(url);
         }
-        
+    }
+
+    if (!navigator.geolocation) {
+
+        const url =
+        `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+        abrirMapa(url);
+
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+        function(position){
+
+            const origemLat = position.coords.latitude;
+            const origemLng = position.coords.longitude;
+
+            const url =
+            `https://www.google.com/maps/dir/?api=1`+
+            `&origin=${origemLat},${origemLng}`+
+            `&destination=${destinoLat},${destinoLng}`+
+            `&travelmode=driving`;
+
+            showToast('Abrindo navegação...');
+
+            abrirMapa(url);
+
+        },
+
+        function(){
+
+            showToast('Abrindo destino...');
+
+            const url =
+            `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+            abrirMapa(url);
+
+        },
+
+        {
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:0
+        }
+
+    );
+}        
         function editCadastro() {
             if(!selectedCadastro) return;
             let numero = '';
