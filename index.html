@@ -1389,53 +1389,39 @@ location.reload();
         
         function irAoLocal(){
 
-if(!selectedCadastro){
+    if(!selectedCadastro){
 
-showToast(
-'Selecione um cadastro'
-);
+        showToast('Selecione um cadastro');
+        return;
 
-return;
+    }
 
-}
+    if(
+        !selectedCadastro.lat ||
+        !selectedCadastro.lng
+    ){
 
-if(
-!selectedCadastro.lat ||
-!selectedCadastro.lng
-){
+        showToast('Local inválido');
+        return;
 
-showToast(
-'Destino inválido'
-);
+    }
 
-return;
+    const destinoLat = selectedCadastro.lat;
+    const destinoLng = selectedCadastro.lng;
 
-}
+    showToast('Abrindo navegação...');
 
-const destinoLat =
-selectedCadastro.lat;
+    const urlGoogleMaps =
+        'https://www.google.com/maps/dir/?api=1' +
+        '&destination=' +
+        destinoLat +
+        ',' +
+        destinoLng +
+        '&travelmode=driving';
 
-const destinoLng =
-selectedCadastro.lng;
+    window.location.href = urlGoogleMaps;
 
-showToast(
-'Abrindo rota...'
-);
-
-const rota =
-
-'https://www.google.com/maps/dir/?api=1'+
-'&destination='+
-destinoLat+
-','+
-destinoLng+
-'&travelmode=driving';
-
-window.location.href =
-rota;
-
-}        
-        function editCadastro() {
+}        function editCadastro() {
             if(!selectedCadastro) return;
             let numero = '';
             let enderecoSemNumero = selectedCadastro.endereco || '';
