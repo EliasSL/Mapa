@@ -550,14 +550,135 @@
                 font-size: 20px;
             }
         }
-    </style>
+    .login-screen{
+
+position:fixed;
+
+top:0;
+
+left:0;
+
+width:100%;
+
+height:100%;
+
+background:#0d4d1f;
+
+z-index:99999;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+}
+
+.login-box{
+
+background:white;
+
+padding:30px;
+
+border-radius:12px;
+
+width:90%;
+
+max-width:350px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:15px;
+
+}
+
+.login-box input{
+
+padding:12px;
+
+font-size:16px;
+
+}
+
+.login-box button{
+
+padding:12px;
+
+background:#1a7431;
+
+color:white;
+
+border:none;
+
+border-radius:6px;
+
+font-weight:bold;
+
+}
+
+#loginErro{
+
+color:red;
+
+font-size:14px;
+
+text-align:center;
+
+}
+</style>
 </head>
 <body>
-    <div id="map"></div>
+  <div id="loginScreen" class="login-screen">
+
+<div class="login-box">
+
+<h2>MAPA DO CRIME - NBO</h2>
+
+<input
+type="text"
+id="loginUsuario"
+placeholder="Usuário">
+
+<input
+type="password"
+id="loginSenha"
+placeholder="Senha">
+
+<button onclick="fazerLogin()">
+
+Entrar
+
+</button>
+
+<p id="loginErro"></p>
+
+</div>
+
+</div>  
+<div id="map"></div>
     
     <div class="app-header">
         <div class="header-top">
-            <div class="logo-area">
+          <div>
+
+<button
+onclick="alterarSenha()">
+
+<i class="fas fa-key"></i>
+
+</button>
+
+<button
+onclick="sair()">
+
+<i class="fas fa-sign-out-alt"></i>
+
+</button>
+
+</div>
+  <div class="logo-area">
                 <div class="logo-icon">
                     <i class="fas fa-map-marker-alt"></i>
                 </div>
@@ -677,21 +798,143 @@
         let selectedCadastro = null;
         let currentEditingId = null;
         let markers = {};
-        
+        let usuarioLogado=null;
+
+let admin=false;
         function getPrimeiraPalavraNome(nomeCompleto) {
             if (!nomeCompleto) return '?';
             return nomeCompleto.trim().split(' ')[0];
         }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            init();
-            document.getElementById('btnLocaisSalvos').addEventListener('click', openCadastrosPanel);
-            document.getElementById('buscarNumeroBtn').addEventListener('click', function(e) {
-                e.stopPropagation();
-                buscarNumeroPorLocalizacao();
-            });
-        });
-        
+        document.addEventListener('DOMContentLoaded', function(){
+
+document.getElementById('btnLocaisSalvos')
+.addEventListener(
+'click',
+openCadastrosPanel
+);
+
+verificarSessao();
+
+});
+     async function fazerLogin(){
+
+const usuario=
+document.getElementById(
+'loginUsuario'
+).value.trim();
+
+const senha=
+document.getElementById(
+'loginSenha'
+).value.trim();
+
+if(!usuario||!senha){
+
+document.getElementById(
+'loginErro'
+).innerText=
+'Preencha usuário e senha';
+
+return;
+
+}
+
+try{
+
+const response=
+await fetch(
+SCRIPT_URL+
+'?action=login'+
+'&usuario='+
+encodeURIComponent(usuario)+
+'&senha='+
+encodeURIComponent(senha)
+);
+
+const data=
+await response.json();
+
+if(data.success){
+
+usuarioLogado=usuario;
+
+admin=data.admin;
+
+localStorage.setItem(
+'usuarioLogado',
+JSON.stringify({
+usuario,
+admin
+})
+);
+
+document.getElementById(
+'loginScreen'
+).style.display='none';
+
+init();
+
+}
+else{
+
+document.getElementById(
+'loginErro'
+).innerText=
+'Login inválido';
+
+}
+
+}catch(e){
+
+document.getElementById(
+'loginErro'
+).innerText=
+'Erro login';
+
+}
+
+}
+
+
+
+function verificarSessao(){
+
+const s=
+localStorage.getItem(
+'usuarioLogado'
+);
+
+if(!s)return;
+
+const dados=
+JSON.parse(s);
+
+usuarioLogado=
+dados.usuario;
+
+admin=
+dados.admin;
+
+document.getElementById(
+'loginScreen'
+).style.display='none';
+
+init();
+
+}
+
+
+
+function sair(){
+
+localStorage.removeItem(
+'usuarioLogado'
+);
+
+location.reload();
+
+}   
         function init() {
             // Coordenadas centrais de Nova Brasilândia D'Oeste
             map = L.map('map').setView([-11.720739, -62.315405], 18);
@@ -1224,7 +1467,42 @@
             div.textContent = text; 
             return div.innerHTML; 
         }
-        
+        async function alterarSenha(){
+
+const nova=
+prompt(
+'Nova senha'
+);
+
+if(!nova)return;
+
+await fetch(
+SCRIPT_URL,
+{
+
+method:'POST',
+
+mode:'no-cors',
+
+body:JSON.stringify({
+
+action:'alterarSenha',
+
+usuario:usuarioLogado,
+
+senha:nova
+
+})
+
+}
+
+);
+
+showToast(
+'Senha alterada'
+);
+
+}
         window.verCadastroDetalhe = verCadastroDetalhe;
         window.closeCadastrosPanel = closeCadastrosPanel;
         window.filterCadastros = filterCadastros;
