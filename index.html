@@ -1405,85 +1405,36 @@ if(
 ){
 
 showToast(
-'Local inválido'
+'Destino inválido'
 );
 
 return;
 
 }
 
-if(
-navigator.geolocation
-){
-
-showToast(
-'Obtendo GPS...'
-);
-
-navigator.geolocation.getCurrentPosition(
-
-(pos)=>{
-
-const origemLat=
-pos.coords.latitude;
-
-const origemLng=
-pos.coords.longitude;
-
-const destinoLat=
+const destinoLat =
 selectedCadastro.lat;
 
-const destinoLng=
+const destinoLng =
 selectedCadastro.lng;
 
-const rota=
+showToast(
+'Abrindo rota...'
+);
+
+const rota =
+
 'https://www.google.com/maps/dir/?api=1'+
-'&origin='+
-origemLat+
-','+
-origemLng+
 '&destination='+
 destinoLat+
 ','+
 destinoLng+
 '&travelmode=driving';
 
-window.open(
-rota,
-'_blank'
-);
+window.location.href =
+rota;
 
-},
-
-()=>{
-
-showToast(
-'GPS não autorizado'
-);
-
-},
-
-{
-
-enableHighAccuracy:true,
-
-timeout:10000
-
-}
-
-);
-
-}
-else{
-
-showToast(
-'GPS indisponível'
-);
-
-}
-
-}
-        
+}        
         function editCadastro() {
             if(!selectedCadastro) return;
             let numero = '';
