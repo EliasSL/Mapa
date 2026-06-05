@@ -1387,7 +1387,7 @@ location.reload();
             loadCadastros();
         }
         
-function irAoLocal() {
+        function irAoLocal() {
     if (!selectedCadastro) {
         showToast('Selecione um cadastro');
         return;
@@ -1398,38 +1398,61 @@ function irAoLocal() {
         return;
     }
 
-    const destinoLat = parseFloat(selectedCadastro.lat);
-    const destinoLng = parseFloat(selectedCadastro.lng);
+    const destinoLat = selectedCadastro.lat;
+    const destinoLng = selectedCadastro.lng;
 
-    showToast('Abrindo Google Maps...');
+    showToast('Obtendo sua localização...');
 
-    // URL padrão do Google Maps (sem intent, sem complicações)
-    let url = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-    // Tenta obter localização para rota (opcional, se falhar usa só o destino)
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const origemLat = position.coords.latitude;
-                const origemLng = position.coords.longitude;
-                // URL com rota
-                const urlComRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/`;
-                window.open(urlComRota, '_blank');
-            },
-            function() {
-                // Fallback: só o destino
-                window.open(url, '_blank');
-            },
-            {
-                enableHighAccuracy: false, // Mais rápido
-                timeout: 3000,
-                maximumAge: 30000
-            }
-        );
-    } else {
-        // Sem geolocalização, abre só o destino
-        window.open(url, '_blank');
+    // Se o navegador não suportar geolocalização, vai direto para o destino
+    if (!navigator.geolocation) {
+        showToast('Seu navegador não suporta geolocalização');
+        // Usa o padrão de busca/ponto do Maps API
+        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+        window.open(fallbackUrl, '_blank');
+        return;
     }
+
+    // Obtém a localização atual do usuário
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const origemLat = position.coords.latitude;
+            const origenLng = position.coords.longitude;
+            
+            // Padrão oficial de rotas (Directions) do Google Maps URL Universal
+            const urlGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+            
+            showToast('Abrindo navegação...');
+            window.open(urlGoogleMaps, '_blank');
+        },
+        function(error) {
+            console.error('Erro de geolocalização:', error);
+            
+            let mensagemErro = 'Não foi possível obter sua localização. ';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    mensagemErro += 'Permissão negada. Habilite a localização.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    mensagemErro += 'Localização indisponível.';
+                    break;
+                case error.TIMEOUT:
+                    mensagemErro += 'Tempo esgotado.';
+                    break;
+                default:
+                    mensagemErro += 'Tente novamente.';
+            }
+            showToast(mensagemErro);
+            
+            // Fallback caso a geolocalização falhe (abre apenas o marcador de destino)
+            const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+            window.open(fallbackUrl, '_blank');
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
         function editCadastro() {
             if(!selectedCadastro) return;
