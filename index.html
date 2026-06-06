@@ -1123,7 +1123,12 @@
                 if (!response.ok) throw new Error('Erro na resposta');
                 const data = await response.json();
                 if (data && data.cadastros && Array.isArray(data.cadastros) && data.cadastros.length > 0) {
-                    allCadastros = data.cadastros;
+                    // Normaliza os nomes das colunas (lat/lng)
+                    allCadastros = data.cadastros.map(cad => ({
+                        ...cad,
+                        lat: cad.lat || cad.Lat || cad.LAT,
+                        lng: cad.lng || cad.Lng || cad.LNG || cad.Ing || cad.ing || cad.long || cad.Long
+                    }));
                     console.log('Cadastros carregados da planilha:', allCadastros.length);
                 } else {
                     throw new Error('Nenhum dado na planilha');
@@ -1144,16 +1149,22 @@
             Object.keys(markers).forEach(key => { if (markers[key]) map.removeLayer(markers[key]); });
             markers = {};
             
+            let marcadoresAdicionados = 0;
             allCadastros.forEach(cad => {
-                if (cad.lat && cad.lng && cad.nome) {
-                    addMarkerToMap(parseFloat(cad.lat), parseFloat(cad.lng), cad.nome, cad.grupo || 'OUTRO', cad.id, cad.imagem, cad.endereco);
+                let lat = parseFloat(cad.lat);
+                let lng = parseFloat(cad.lng);
+                if (!isNaN(lat) && !isNaN(lng) && cad.nome) {
+                    addMarkerToMap(lat, lng, cad.nome, cad.grupo || 'OUTRO', cad.id, cad.imagem, cad.endereco);
+                    marcadoresAdicionados++;
+                } else {
+                    console.warn('Cadastro sem coordenadas válidas:', cad.nome, cad.lat, cad.lng);
                 }
             });
             
             if (allCadastros.length === 0) {
                 showToast('Nenhum cadastro encontrado');
             } else {
-                showToast(`${allCadastros.length} local(is) carregado(s)`);
+                showToast(`${marcadoresAdicionados} de ${allCadastros.length} local(is) carregado(s)`);
             }
         }
         
@@ -1242,8 +1253,11 @@
                 selectedCadastro = cadastro;
                 document.getElementById('actionsFooter').classList.add('show');
                 showToast(`📍 ${cadastro.nome}`);
-                if (cadastro.lat && cadastro.lng) {
-                    map.setView([parseFloat(cadastro.lat), parseFloat(cadastro.lng)], 18);
+                // Normaliza as coordenadas ao selecionar
+                let lat = parseFloat(cadastro.lat);
+                let lng = parseFloat(cadastro.lng);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    map.setView([lat, lng], 18);
                     map.closePopup();
                     if (markers[id]) {
                         markers[id].openPopup();
@@ -1261,65 +1275,60 @@
             loadCadastros();
         }
         
+        // FUNÇÃO CORRIGIDA - Ir ao Local
         function irAoLocal() {
             if (!selectedCadastro) {
                 showToast('Selecione um cadastro');
                 return;
             }
 
-            if (!selectedCadastro.lat || !selectedCadastro.lng) {
-                showToast('Local inválido');
+            // Normaliza as coordenadas (suporta lat/Lat e lng/Lng/Ing)
+            let destinoLat = selectedCadastro.lat || selectedCadastro.Lat || selectedCadastro.LAT;
+            let destinoLng = selectedCadastro.lng || selectedCadastro.Lng || selectedCadastro.LNG || selectedCadastro.Ing || selectedCadastro.ing;
+            
+            // Converte para número
+            destinoLat = parseFloat(destinoLat);
+            destinoLng = parseFloat(destinoLng);
+            
+            if (isNaN(destinoLat) || isNaN(destinoLng)) {
+                showToast('Coordenadas do local inválidas');
+                console.error('Coordenadas inválidas:', { destinoLat, destinoLng, cadastro: selectedCadastro });
                 return;
             }
 
-            const destinoLat = selectedCadastro.lat;
-            const destinoLng = selectedCadastro.lng;
+            showToast('Abrindo Google Maps...');
 
-            showToast('Obtendo sua localização...');
+            // URL básica do destino (sempre funciona)
+            const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
 
+            // Verifica se tem geolocalização
             if (!navigator.geolocation) {
-                showToast('Seu navegador não suporta geolocalização');
-                const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                window.open(fallbackUrl, '_blank');
+                window.open(urlDestino, '_blank');
                 return;
             }
 
+            // Tenta obter localização atual para fazer rota
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     const origemLat = position.coords.latitude;
                     const origemLng = position.coords.longitude;
                     
-                    const urlGoogleMaps = `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
+                    // URL com rota a partir da localização atual
+                    const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
                     
-                    showToast('Abrindo navegação...');
-                    window.open(urlGoogleMaps, '_blank');
+                    showToast('Abrindo navegação com rota...');
+                    window.open(urlRota, '_blank');
                 },
                 function(error) {
-                    console.error('Erro de geolocalização:', error);
-                    
-                    let mensagemErro = 'Não foi possível obter sua localização. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            mensagemErro += 'Permissão negada. Habilite a localização.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            mensagemErro += 'Localização indisponível.';
-                            break;
-                        case error.TIMEOUT:
-                            mensagemErro += 'Tempo esgotado.';
-                            break;
-                        default:
-                            mensagemErro += 'Tente novamente.';
-                    }
-                    showToast(mensagemErro);
-                    
-                    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                    window.open(fallbackUrl, '_blank');
+                    // Falha ao obter localização - abre apenas o destino
+                    console.warn('Erro ao obter localização:', error);
+                    showToast('Abrindo destino no mapa...');
+                    window.open(urlDestino, '_blank');
                 },
                 {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 30000
                 }
             );
         }
