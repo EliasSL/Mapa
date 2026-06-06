@@ -615,7 +615,6 @@
             border-radius: 3px;
         }
 
-        /* Estilo para o modal do mapa */
         .map-modal {
             position: fixed;
             top: 0;
@@ -1303,7 +1302,7 @@
             loadCadastros();
         }
         
-        // FUNÇÃO CORRIGIDA PARA GITHUB PAGES - Usa iframe embed
+        // FUNÇÃO CORRIGIDA - GitHub Pages (SEM window.open)
         function irAoLocal() {
             if (!selectedCadastro) {
                 showToast('Selecione um cadastro');
@@ -1354,9 +1353,16 @@
                 const externalBtn = document.createElement('button');
                 externalBtn.className = 'map-btn map-btn-external';
                 externalBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Abrir no Google Maps';
+                // CORREÇÃO: Usar location.href ao invés de window.open
                 externalBtn.onclick = () => {
-                    window.open(`https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`, '_blank');
+                    // Fecha o modal primeiro
                     modal.remove();
+                    // Mostra toast informativo
+                    showToast('Copie as coordenadas e cole no Google Maps');
+                    // Mostra um alerta com as coordenadas
+                    setTimeout(() => {
+                        alert(`Coordenadas do local:\n${destinoLat}, ${destinoLng}\n\nCopie essas coordenadas e cole no Google Maps do seu celular.`);
+                    }, 100);
                 };
                 
                 btnContainer.appendChild(closeBtn);
@@ -1367,7 +1373,7 @@
                 document.body.appendChild(modal);
                 
             } else {
-                // Fora do GitHub Pages: usa o método normal
+                // Fora do GitHub Pages: usa o método normal com window.open
                 const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
                 
                 if (navigator.geolocation) {
