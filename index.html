@@ -614,6 +614,38 @@
             padding: 0 2px;
             border-radius: 3px;
         }
+
+        /* Estilo para o modal do mapa */
+        .map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .map-iframe {
+            width: 95%;
+            height: 70%;
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .map-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .map-btn-close { background: #1a7431; color: white; }
+        .map-btn-external { background: #2196F3; color: white; }
     </style>
 </head>
 <body>
@@ -1123,11 +1155,10 @@
                 if (!response.ok) throw new Error('Erro na resposta');
                 const data = await response.json();
                 if (data && data.cadastros && Array.isArray(data.cadastros) && data.cadastros.length > 0) {
-                    // Normaliza os nomes das colunas (lat/lng)
                     allCadastros = data.cadastros.map(cad => ({
                         ...cad,
                         lat: cad.lat || cad.Lat || cad.LAT,
-                        lng: cad.lng || cad.Lng || cad.LNG || cad.Ing || cad.ing || cad.long || cad.Long
+                        lng: cad.lng || cad.Lng || cad.LNG || cad.Ing || cad.ing
                     }));
                     console.log('Cadastros carregados da planilha:', allCadastros.length);
                 } else {
@@ -1156,8 +1187,6 @@
                 if (!isNaN(lat) && !isNaN(lng) && cad.nome) {
                     addMarkerToMap(lat, lng, cad.nome, cad.grupo || 'OUTRO', cad.id, cad.imagem, cad.endereco);
                     marcadoresAdicionados++;
-                } else {
-                    console.warn('Cadastro sem coordenadas válidas:', cad.nome, cad.lat, cad.lng);
                 }
             });
             
@@ -1253,7 +1282,6 @@
                 selectedCadastro = cadastro;
                 document.getElementById('actionsFooter').classList.add('show');
                 showToast(`📍 ${cadastro.nome}`);
-                // Normaliza as coordenadas ao selecionar
                 let lat = parseFloat(cadastro.lat);
                 let lng = parseFloat(cadastro.lng);
                 if (!isNaN(lat) && !isNaN(lng)) {
@@ -1275,62 +1303,89 @@
             loadCadastros();
         }
         
-        // FUNÇÃO CORRIGIDA - Ir ao Local
+        // FUNÇÃO CORRIGIDA PARA GITHUB PAGES - Usa iframe embed
         function irAoLocal() {
             if (!selectedCadastro) {
                 showToast('Selecione um cadastro');
                 return;
             }
 
-            // Normaliza as coordenadas (suporta lat/Lat e lng/Lng/Ing)
             let destinoLat = selectedCadastro.lat || selectedCadastro.Lat || selectedCadastro.LAT;
             let destinoLng = selectedCadastro.lng || selectedCadastro.Lng || selectedCadastro.LNG || selectedCadastro.Ing || selectedCadastro.ing;
             
-            // Converte para número
             destinoLat = parseFloat(destinoLat);
             destinoLng = parseFloat(destinoLng);
             
             if (isNaN(destinoLat) || isNaN(destinoLng)) {
                 showToast('Coordenadas do local inválidas');
-                console.error('Coordenadas inválidas:', { destinoLat, destinoLng, cadastro: selectedCadastro });
                 return;
             }
 
-            showToast('Abrindo Google Maps...');
-
-            // URL básica do destino (sempre funciona)
-            const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-            // Verifica se tem geolocalização
-            if (!navigator.geolocation) {
-                window.open(urlDestino, '_blank');
-                return;
-            }
-
-            // Tenta obter localização atual para fazer rota
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const origemLat = position.coords.latitude;
-                    const origemLng = position.coords.longitude;
-                    
-                    // URL com rota a partir da localização atual
-                    const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
-                    
-                    showToast('Abrindo navegação com rota...');
-                    window.open(urlRota, '_blank');
-                },
-                function(error) {
-                    // Falha ao obter localização - abre apenas o destino
-                    console.warn('Erro ao obter localização:', error);
-                    showToast('Abrindo destino no mapa...');
+            // Detecta se está no GitHub Pages
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            
+            if (isGitHubPages) {
+                // GitHub Pages: Abre em um modal com iframe
+                showToast('Abrindo mapa...');
+                
+                // Remove modal existente se houver
+                const existingModal = document.querySelector('.map-modal');
+                if (existingModal) existingModal.remove();
+                
+                // Cria modal
+                const modal = document.createElement('div');
+                modal.className = 'map-modal';
+                
+                // URL do Google Maps embed (funciona em qualquer lugar)
+                const embedUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${destinoLat},${destinoLng}&zoom=16`;
+                
+                const iframe = document.createElement('iframe');
+                iframe.className = 'map-iframe';
+                iframe.src = embedUrl;
+                iframe.allow = 'geolocation';
+                
+                const btnContainer = document.createElement('div');
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'map-btn map-btn-close';
+                closeBtn.innerHTML = '<i class="fas fa-times"></i> Fechar';
+                closeBtn.onclick = () => modal.remove();
+                
+                const externalBtn = document.createElement('button');
+                externalBtn.className = 'map-btn map-btn-external';
+                externalBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Abrir no Google Maps';
+                externalBtn.onclick = () => {
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`, '_blank');
+                    modal.remove();
+                };
+                
+                btnContainer.appendChild(closeBtn);
+                btnContainer.appendChild(externalBtn);
+                
+                modal.appendChild(iframe);
+                modal.appendChild(btnContainer);
+                document.body.appendChild(modal);
+                
+            } else {
+                // Fora do GitHub Pages: usa o método normal
+                const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+                
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const origemLat = position.coords.latitude;
+                            const origemLng = position.coords.longitude;
+                            const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
+                            window.open(urlRota, '_blank');
+                        },
+                        function() {
+                            window.open(urlDestino, '_blank');
+                        }
+                    );
+                } else {
                     window.open(urlDestino, '_blank');
-                },
-                {
-                    enableHighAccuracy: false,
-                    timeout: 5000,
-                    maximumAge: 30000
                 }
-            );
+            }
         }
         
         function editCadastro() {
