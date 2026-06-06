@@ -1388,6 +1388,7 @@ location.reload();
         }
         
         function irAoLocal() {
+
     if (!selectedCadastro) {
         showToast('Selecione um cadastro');
         return;
@@ -1403,56 +1404,57 @@ location.reload();
 
     showToast('Obtendo sua localização...');
 
-    // Se o navegador não suportar geolocalização, vai direto para o destino
-    if (!navigator.geolocation) {
-        showToast('Seu navegador não suporta geolocalização');
-        // Usa o padrão de busca/ponto do Maps API
-        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-        window.open(fallbackUrl, '_blank');
+    const abrirMapa = (url)=>{
+        window.location.href = url;
+    };
+
+    if (!navigator.geolocation){
+
+        const fallbackUrl =
+        `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+        abrirMapa(fallbackUrl);
         return;
     }
 
-    // Obtém a localização atual do usuário
     navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const origemLat = position.coords.latitude;
-            const origenLng = position.coords.longitude;
-            
-            // Padrão oficial de rotas (Directions) do Google Maps URL Universal
-            const urlGoogleMaps = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-            
+
+        function(position){
+
+            const origemLat =
+            position.coords.latitude;
+
+            const origemLng =
+            position.coords.longitude;
+
+            const urlGoogleMaps =
+            `https://www.google.com/maps/dir/?api=1&origin=${origemLat},${origemLng}&destination=${destinoLat},${destinoLng}&travelmode=driving`;
+
             showToast('Abrindo navegação...');
-            window.open(urlGoogleMaps, '_blank');
+
+            abrirMapa(urlGoogleMaps);
+
         },
-        function(error) {
-            console.error('Erro de geolocalização:', error);
-            
-            let mensagemErro = 'Não foi possível obter sua localização. ';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    mensagemErro += 'Permissão negada. Habilite a localização.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    mensagemErro += 'Localização indisponível.';
-                    break;
-                case error.TIMEOUT:
-                    mensagemErro += 'Tempo esgotado.';
-                    break;
-                default:
-                    mensagemErro += 'Tente novamente.';
-            }
-            showToast(mensagemErro);
-            
-            // Fallback caso a geolocalização falhe (abre apenas o marcador de destino)
-            const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-            window.open(fallbackUrl, '_blank');
+
+        function(error){
+
+            console.log(error);
+
+            const fallbackUrl =
+            `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+
+            abrirMapa(fallbackUrl);
+
         },
+
         {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:0
         }
+
     );
+
 }
         function editCadastro() {
             if(!selectedCadastro) return;
