@@ -644,7 +644,19 @@
             margin: 5px;
         }
         .map-btn-close { background: #1a7431; color: white; }
-        .map-btn-external { background: #2196F3; color: white; }
+        .map-btn-copy { background: #2196F3; color: white; }
+        
+        .coords-box {
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -1302,7 +1314,7 @@
             loadCadastros();
         }
         
-        // FUNÇÃO CORRIGIDA - GitHub Pages (SEM window.open)
+        // FUNÇÃO DEFINITIVA PARA GITHUB PAGES - Apenas mostra o mapa no iframe e copia coordenadas
         function irAoLocal() {
             if (!selectedCadastro) {
                 showToast('Selecione um cadastro');
@@ -1324,7 +1336,7 @@
             const isGitHubPages = window.location.hostname.includes('github.io');
             
             if (isGitHubPages) {
-                // GitHub Pages: Abre em um modal com iframe
+                // GitHub Pages: Abre um modal com iframe e botão de copiar
                 showToast('Abrindo mapa...');
                 
                 // Remove modal existente se houver
@@ -1335,13 +1347,18 @@
                 const modal = document.createElement('div');
                 modal.className = 'map-modal';
                 
-                // URL do Google Maps embed (funciona em qualquer lugar)
+                // URL do Google Maps embed
                 const embedUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${destinoLat},${destinoLng}&zoom=16`;
                 
                 const iframe = document.createElement('iframe');
                 iframe.className = 'map-iframe';
                 iframe.src = embedUrl;
                 iframe.allow = 'geolocation';
+                
+                // Caixa com as coordenadas para copiar
+                const coordsBox = document.createElement('div');
+                coordsBox.className = 'coords-box';
+                coordsBox.innerHTML = `📍 Coordenadas:<br>${destinoLat}, ${destinoLng}<br><br>👇 Clique no botão abaixo para copiar`;
                 
                 const btnContainer = document.createElement('div');
                 
@@ -1350,25 +1367,25 @@
                 closeBtn.innerHTML = '<i class="fas fa-times"></i> Fechar';
                 closeBtn.onclick = () => modal.remove();
                 
-                const externalBtn = document.createElement('button');
-                externalBtn.className = 'map-btn map-btn-external';
-                externalBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Abrir no Google Maps';
-                // CORREÇÃO: Usar location.href ao invés de window.open
-                externalBtn.onclick = () => {
-                    // Fecha o modal primeiro
-                    modal.remove();
-                    // Mostra toast informativo
-                    showToast('Copie as coordenadas e cole no Google Maps');
-                    // Mostra um alerta com as coordenadas
-                    setTimeout(() => {
-                        alert(`Coordenadas do local:\n${destinoLat}, ${destinoLng}\n\nCopie essas coordenadas e cole no Google Maps do seu celular.`);
-                    }, 100);
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'map-btn map-btn-copy';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copiar Coordenadas';
+                copyBtn.onclick = () => {
+                    const coordsText = `${destinoLat}, ${destinoLng}`;
+                    navigator.clipboard.writeText(coordsText).then(() => {
+                        showToast('✅ Coordenadas copiadas! Abra o Google Maps e cole');
+                        modal.remove();
+                    }).catch(() => {
+                        alert(`Copie manualmente:\n${coordsText}`);
+                        modal.remove();
+                    });
                 };
                 
                 btnContainer.appendChild(closeBtn);
-                btnContainer.appendChild(externalBtn);
+                btnContainer.appendChild(copyBtn);
                 
                 modal.appendChild(iframe);
+                modal.appendChild(coordsBox);
                 modal.appendChild(btnContainer);
                 document.body.appendChild(modal);
                 
