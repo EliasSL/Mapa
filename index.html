@@ -1390,69 +1390,54 @@ location.reload();
         function irAoLocal() {
 
     if (!selectedCadastro) {
+
         showToast('Selecione um cadastro');
+
         return;
+
     }
 
     if (!selectedCadastro.lat || !selectedCadastro.lng) {
+
         showToast('Local inválido');
+
         return;
+
     }
 
-    const destinoLat = selectedCadastro.lat;
-    const destinoLng = selectedCadastro.lng;
+    const destinoLat =
+    selectedCadastro.lat;
 
-    showToast('Obtendo sua localização...');
+    const destinoLng =
+    selectedCadastro.lng;
 
-    const abrirMapa = (url)=>{
-        window.location.href = url;
+    showToast(
+    'Abrindo navegação...'
+    );
+
+    const abrirMapa=(url)=>{
+
+        const a=
+        document.createElement('a');
+
+        a.href=url;
+
+        a.target='_self';
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        a.remove();
+
     };
 
-    if (!navigator.geolocation){
+    const urlGoogleMaps=
 
-        const fallbackUrl =
-        `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+`https://www.google.com/maps/dir/?api=1&destination=${destinoLat},${destinoLng}&travelmode=driving`;
 
-        abrirMapa(fallbackUrl);
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-
-        function(position){
-
-            const origemLat =
-            position.coords.latitude;
-
-            const origemLng =
-            position.coords.longitude;
-
-            const urlGoogleMaps =
-`geo:${destinoLat},${destinoLng}?q=${destinoLat},${destinoLng}`;
-
-            showToast('Abrindo navegação...');
-
-            abrirMapa(urlGoogleMaps);
-
-        },
-
-        function(error){
-
-            console.log(error);
-
-            const fallbackUrl =
-            `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-
-            abrirMapa(fallbackUrl);
-
-        },
-
-        {
-            enableHighAccuracy:true,
-            timeout:10000,
-            maximumAge:0
-        }
-
+    abrirMapa(
+    urlGoogleMaps
     );
 
 }
