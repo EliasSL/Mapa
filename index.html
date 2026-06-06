@@ -1387,59 +1387,118 @@ location.reload();
             loadCadastros();
         }
         
-        function irAoLocal() {
-
+function irAoLocal() {
     if (!selectedCadastro) {
-
         showToast('Selecione um cadastro');
-
         return;
-
     }
 
     if (!selectedCadastro.lat || !selectedCadastro.lng) {
-
         showToast('Local inválido');
-
         return;
-
     }
 
-    const destinoLat =
-    selectedCadastro.lat;
+    const destinoLat = parseFloat(selectedCadastro.lat);
+    const destinoLng = parseFloat(selectedCadastro.lng);
 
-    const destinoLng =
-    selectedCadastro.lng;
+    showToast('Abrindo mapa...');
 
-    showToast(
-    'Abrindo navegação...'
-    );
+    // Detecta se está no GitHub Pages ou WebView
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const isSpck = /spck|webview/i.test(navigator.userAgent);
 
-    const abrirMapa=(url)=>{
+    // Para GitHub Pages, usar iframe dentro da página
+    if (isGitHubPages || isSpck) {
+        // Criar modal com iframe do Google Maps
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        `;
+        
+        const iframe = document.createElement('iframe');
+        const mapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${destinoLat},${destinoLng}&zoom=15`;
+        
+        iframe.style.cssText = `
+            width: 95%;
+            height: 70%;
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        `;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '<i class="fas fa-times"></i> Fechar Mapa';
+        closeBtn.style.cssText = `
+            padding: 12px 24px;
+            background: #1a7431;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        `;
+        
+        const openExternalBtn = document.createElement('button');
+        openExternalBtn.innerHTML = '<i class="fas fa-external-link-alt"></i> Abrir no Google Maps';
+        openExternalBtn.style.cssText = `
+            padding: 12px 24px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-left: 10px;
+        `;
+        
+        const btnContainer = document.createElement('div');
+        btnContainer.appendChild(closeBtn);
+        btnContainer.appendChild(openExternalBtn);
+        
+        iframe.src = mapUrl;
+        modal.appendChild(iframe);
+        modal.appendChild(btnContainer);
+        
+        closeBtn.onclick = () => document.body.removeChild(modal);
+        openExternalBtn.onclick = () => {
+            window.open(`https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`, '_blank');
+            document.body.removeChild(modal);
+        };
+        
+        document.body.appendChild(modal);
+        return;
+    }
 
-        const a=
-        document.createElement('a');
-
-        a.href=url;
-
-        a.target='_self';
-
-        document.body.appendChild(a);
-
-        a.click();
-
-        a.remove();
-
-    };
-
-    const urlGoogleMaps=
-
-`https://www.google.com/maps/dir/?api=1&destination=${destinoLat},${destinoLng}&travelmode=driving`;
-
-    abrirMapa(
-    urlGoogleMaps
-    );
-
+    // Método normal para navegadores
+    const url = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+    
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const origemLat = position.coords.latitude;
+                const origemLng = position.coords.longitude;
+                const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/`;
+                window.open(urlRota, '_blank');
+            },
+            function() {
+                window.open(url, '_blank');
+            }
+        );
+    } else {
+        window.open(url, '_blank');
+    }
 }
         function editCadastro() {
             if(!selectedCadastro) return;
