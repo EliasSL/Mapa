@@ -615,7 +615,50 @@
             border-radius: 3px;
         }
 
-        /* Removemos os estilos do modal antigo, pois não serão mais usados */
+        /* Modal para quando o navegador não suportar abrir diretamente */
+        .map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .map-iframe {
+            width: 95%;
+            height: 70%;
+            border: none;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .map-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .map-btn-close { background: #dc3545; color: white; }
+        .map-btn-copy { background: #2196F3; color: white; }
+        .map-btn-open { background: #1a7431; color: white; }
+        
+        .coords-box {
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -1273,7 +1316,8 @@
             loadCadastros();
         }
         
-        // FUNÇÃO CORRIGIDA: Agora abre o Google Maps com a rota traçada também no GitHub Pages
+        // FUNÇÃO CORRIGIDA PARA FUNCIONAR NO GITHUB PAGES
+        // Usa um link HTML simples que o navegador consegue processar
         function irAoLocal() {
             if (!selectedCadastro) {
                 showToast('Selecione um cadastro');
@@ -1291,32 +1335,49 @@
                 return;
             }
 
-            // Constroi a URL base do destino
-            const urlDestino = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-            
-            // Tenta usar a geolocalização para traçar a rota
+            // Tenta obter a localização atual e abrir o Google Maps com a rota
             if (navigator.geolocation) {
                 showToast('Obtendo sua localização...');
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
                         const origemLat = position.coords.latitude;
                         const origemLng = position.coords.longitude;
-                        // URL para traçar a rota do ponto atual até o destino
-                        const urlRota = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
-                        window.open(urlRota, '_blank');
+                        
+                        // Cria um link âncora e simula o clique (funciona melhor no GitHub Pages)
+                        const link = document.createElement('a');
+                        link.href = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
                         showToast('Abrindo rota no Google Maps...');
                     },
                     function(error) {
-                        // Se a geolocalização falhar ou for negada, abre apenas o local no mapa
                         console.warn('Erro de geolocalização:', error);
-                        window.open(urlDestino, '_blank');
+                        // Fallback: abre apenas o local
+                        const link = document.createElement('a');
+                        link.href = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
                         showToast('Não foi possível obter sua localização. Abrindo o local no mapa.');
-                    }
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
                 );
             } else {
-                // Se o navegador não suportar geolocalização
-                window.open(urlDestino, '_blank');
-                showToast('Seu navegador não suporta geolocalização. Abrindo o local no mapa.');
+                // Navegador não suporta geolocalização
+                const link = document.createElement('a');
+                link.href = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('Abrindo localização no Google Maps');
             }
         }
         
