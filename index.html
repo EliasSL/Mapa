@@ -1319,67 +1319,23 @@
         // FUNÇÃO CORRIGIDA PARA FUNCIONAR NO GITHUB PAGES
         // Usa um link HTML simples que o navegador consegue processar
         function irAoLocal() {
-            if (!selectedCadastro) {
-                showToast('Selecione um cadastro');
-                return;
-            }
+    if (!selectedCadastro) {
+        showToast('Selecione um cadastro');
+        return;
+    }
 
-            let destinoLat = selectedCadastro.lat || selectedCadastro.Lat || selectedCadastro.LAT;
-            let destinoLng = selectedCadastro.lng || selectedCadastro.Lng || selectedCadastro.LNG || selectedCadastro.Ing || selectedCadastro.ing;
-            
-            destinoLat = parseFloat(destinoLat);
-            destinoLng = parseFloat(destinoLng);
-            
-            if (isNaN(destinoLat) || isNaN(destinoLng)) {
-                showToast('Coordenadas do local inválidas');
-                return;
-            }
+    let destinoLat = parseFloat(selectedCadastro.lat);
+    let destinoLng = parseFloat(selectedCadastro.lng);
 
-            // Tenta obter a localização atual e abrir o Google Maps com a rota
-            if (navigator.geolocation) {
-                showToast('Obtendo sua localização...');
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const origemLat = position.coords.latitude;
-                        const origemLng = position.coords.longitude;
-                        
-                        // Cria um link âncora e simula o clique (funciona melhor no GitHub Pages)
-                        const link = document.createElement('a');
-                        link.href = `https://www.google.com/maps/dir/${origemLat},${origemLng}/${destinoLat},${destinoLng}/?travelmode=driving`;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        showToast('Abrindo rota no Google Maps...');
-                    },
-                    function(error) {
-                        console.warn('Erro de geolocalização:', error);
-                        // Fallback: abre apenas o local
-                        const link = document.createElement('a');
-                        link.href = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showToast('Não foi possível obter sua localização. Abrindo o local no mapa.');
-                    },
-                    { timeout: 10000, enableHighAccuracy: true }
-                );
-            } else {
-                // Navegador não suporta geolocalização
-                const link = document.createElement('a');
-                link.href = `https://www.google.com/maps/search/?api=1&query=${destinoLat},${destinoLng}`;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                showToast('Abrindo localização no Google Maps');
-            }
-        }
+    if (isNaN(destinoLat) || isNaN(destinoLng)) {
+        showToast('Coordenadas inválidas');
+        return;
+    }
+
+    const url = `https://maps.google.com/?q=${destinoLat},${destinoLng}`;
+
+    window.open(url, '_self');
+}
         
         function editCadastro() {
             if(!selectedCadastro) return;
